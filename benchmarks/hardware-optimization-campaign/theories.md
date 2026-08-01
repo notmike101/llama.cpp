@@ -246,3 +246,20 @@ median of 191.42 tok/s. Server decode median was 207.89 tok/s and TTFT median
 was 133.12 ms. All five generated programs passed strict MSVC compile and
 runtime checks. Draft acceptance stayed between 81.7% and 86.6%. Promote both
 runtime settings into the launcher; no source or binary change is required.
+# 2026-08-01 continuation after K001
+
+- MTP depth 3, 5, and 6 and host thread counts 8 and 12 did not improve the
+  client-visible three-seed median. Depth 4 and ten threads remain the control.
+- The Q6_K small-K correctness failure came from using the destination stride
+  as the output-row bound. Passing `nrows_x` through the kernel launch restores
+  the optimized path and passes 1,210 of 1,210 focused CUDA cases. Nsight P021
+  showed that the dominant 248,320-row Q6_K target head does not select this
+  small-K specialization, so the repair is correctness-only for this model.
+- Draft-only widths of 98,304 and 65,536 rows did not materially improve 35B.
+  Target-prefix truncation excluded termination tokens and failed quality.
+  Adding the contiguous Qwen special-token tail restored byte-identical output
+  but the fill/scatter graph cost reduced throughput to 174.74 tok/s. Both
+  target-head experiments were removed.
+- `p-split=0` produced a 201.67 tok/s five-seed median once, then 192.32 on an
+  immediate identical repeat. Outputs and MTP acceptance were identical, so
+  the first result was run variance and is not a winner.

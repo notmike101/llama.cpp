@@ -5,7 +5,9 @@ param(
     [int]$Port = 18080,
     [int[]]$Seeds = @(101, 202, 303, 404, 505),
     [int]$DraftMax = 4,
+    [int]$DraftMin = 0,
     [double]$DraftPMin = 0.25,
+    [double]$DraftPSplit = 0.10,
     [int]$Threads = 10,
     [ValidateSet('stream', 'nonstream')][string]$Mode = 'stream',
     [string]$PromptFile = '',
@@ -18,7 +20,8 @@ param(
     [ValidateSet(0, 1)][int]$Q8PersistentSourceReuse = 1,
     [ValidateSet(0, 1)][int]$SsmDirectState = 1,
     [ValidateSet(0, 1)][int]$GdnProjectionFusion = 1,
-    [ValidateSet(0, 1)][int]$GdnDirectStateGather = 1
+    [ValidateSet(0, 1)][int]$GdnDirectStateGather = 1,
+    [ValidateRange(0, 248320)][int]$MtpVocab = 0
 )
 
 Set-StrictMode -Version Latest
@@ -126,9 +129,14 @@ $env:GGML_CUDA_Q8_PERSISTENT_SOURCE_REUSE = [string]$Q8PersistentSourceReuse
 $env:LLAMA_CUDA_SSM_CONV_DIRECT_STATE = [string]$SsmDirectState
 $env:LLAMA_CUDA_GDN_PROJECTION_FUSION = [string]$GdnProjectionFusion
 $env:LLAMA_CUDA_GDN_DIRECT_STATE_GATHER = [string]$GdnDirectStateGather
+if ($MtpVocab -gt 0) {
+    $env:LLAMA_QWEN35_MTP_VOCAB = [string]$MtpVocab
+} else {
+    Remove-Item Env:LLAMA_QWEN35_MTP_VOCAB -ErrorAction SilentlyContinue
+}
 $args = @(
     '-m', $model, '--jinja', '--spec-type', 'draft-mtp', '--spec-draft-n-max', "$DraftMax",
-    '--spec-draft-n-min', '0', '--spec-draft-p-min', "$DraftPMin", '--spec-draft-p-split', '0.10',
+    '--spec-draft-n-min', "$DraftMin", '--spec-draft-p-min', "$DraftPMin", '--spec-draft-p-split', "$DraftPSplit",
     '--backend-sampling', '--spec-draft-device', 'CUDA0', '--spec-draft-ngl', 'all',
     '--spec-draft-threads', "$Threads", '--spec-draft-threads-batch', "$Threads",
     '--alias', 'qwen3.6-35b-a3b@q3_k_m', '--host', '127.0.0.1', '--port', "$Port",

@@ -267,3 +267,8 @@ runtime settings into the launcher; no source or binary change is required.
   restored to the retained three-warp geometry. `--no-host` reached 201.16 on
   five seeds but has not separated from the same run variance. Adding
   `--cache-reuse 256` failed to reduce TTFT and reached only 192.51.
+- Q6_K MMVQ VDR2 passed all 14 focused multiplication cases but changed sampled
+  trajectories and reached only 195.52 tok/s. VDR1 was restored. The remaining
+  full-vocabulary opportunity is a fused projection/top-k path that avoids
+  materializing and sorting all 248,320 logits; this is a larger graph/backend
+  pattern and requires explicit review before implementation.

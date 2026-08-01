@@ -263,3 +263,7 @@ runtime settings into the launcher; no source or binary change is required.
 - `p-split=0` produced a 201.67 tok/s five-seed median once, then 192.32 on an
   immediate identical repeat. Outputs and MTP acceptance were identical, so
   the first result was run variance and is not a winner.
+- Two warps for the dominant Q6_K one-column head reached 199.16 tok/s and was
+  restored to the retained three-warp geometry. `--no-host` reached 201.16 on
+  five seeds but has not separated from the same run variance. Adding
+  `--cache-reuse 256` failed to reduce TTFT and reached only 192.51.

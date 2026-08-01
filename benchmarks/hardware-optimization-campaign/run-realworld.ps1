@@ -21,7 +21,9 @@ param(
     [ValidateSet(0, 1)][int]$SsmDirectState = 1,
     [ValidateSet(0, 1)][int]$GdnProjectionFusion = 1,
     [ValidateSet(0, 1)][int]$GdnDirectStateGather = 1,
-    [ValidateRange(0, 248320)][int]$MtpVocab = 0
+    [ValidateRange(0, 248320)][int]$MtpVocab = 0,
+    [switch]$NoHost,
+    [ValidateRange(0, 4096)][int]$CacheReuse = 0
 )
 
 Set-StrictMode -Version Latest
@@ -134,6 +136,8 @@ if ($MtpVocab -gt 0) {
 } else {
     Remove-Item Env:LLAMA_QWEN35_MTP_VOCAB -ErrorAction SilentlyContinue
 }
+$hostArgs = if ($NoHost) { @('--no-host') } else { @() }
+$cacheArgs = if ($CacheReuse -gt 0) { @('--cache-reuse', "$CacheReuse") } else { @() }
 $args = @(
     '-m', $model, '--jinja', '--spec-type', 'draft-mtp', '--spec-draft-n-max', "$DraftMax",
     '--spec-draft-n-min', "$DraftMin", '--spec-draft-p-min', "$DraftPMin", '--spec-draft-p-split', "$DraftPSplit",
@@ -144,7 +148,7 @@ $args = @(
     '-np', '1', '-fa', 'on', '--no-mmap', '-ctk', 'f16', '-ctv', 'f16', '--reasoning', 'off',
     '--reasoning-format', 'none', '--temp', '0.6', '--top-k', '20', '--top-p', '0.95', '--min-p', '0.0',
     '--poll', "$Poll", '--spec-draft-poll', "$DraftPoll", '--no-ui', '--perf'
-)
+) + $hostArgs + $cacheArgs
 $before = [int](& nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits)
 $process = Start-Process -FilePath $Engine -ArgumentList $args -RedirectStandardOutput $serverOut -RedirectStandardError $serverLog -PassThru -WindowStyle Hidden
 try {

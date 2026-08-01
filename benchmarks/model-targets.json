@@ -1,0 +1,23 @@
+{
+  "qwen36_35b_a3b_mtp_q3km": {
+    "campaign": "hardware-optimization-campaign",
+    "model_path": "Qwen3.6-35B-A3B-MTP-GGUF/Qwen3.6-35B-A3B-UD-Q3_K_M.gguf",
+    "model_sha256": "8966DD0CD8C543C4228490A2A8B0E0814FC4F1E6A8E199CEED4DE6754AE7B8E1",
+    "model_bytes": 17104402720,
+    "quant": "UD-Q3_K_M",
+    "context": 150000,
+    "alias": "qwen3.6-35b-a3b@q3_k_m",
+    "promoted_engine": "engines/b10079-mtp-215tps/llama-server.exe",
+    "promoted_engine_sha256": "A263CC1A832D332D7A8CFBE7B36EBD340D573ACF979F1EDE0C02BD166F678DE2",
+    "promoted_cuda_sha256": "2E28A348E24624113B2B5480754D29B76669164A98900092E448709D328DAD67"
+  },
+  "qwen36_27b_mtp_q4km": {
+    "campaign": "qwen36-27b-mtp",
+    "model_path": "qwen3.6-27b-mtp/Qwen3.6-27B-Q4_K_M.gguf",
+    "model_sha256": "A7CBD3ECC0E3F9B333EDEE61AE66BC87ED713C5D49587A8355814722ED329E0F",
+    "quant": "Q4_K_M",
+    "context": 65536,
+    "alias": "qwen3.6-27b@q4_k_m",
+    "promoted_engine": "engines/K718-prod-cpy-channel-pair-q6-fold/llama-server.exe"
+  }
+}

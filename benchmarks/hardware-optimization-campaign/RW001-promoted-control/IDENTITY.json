@@ -1,0 +1,11 @@
+{
+  "pid": 66076,
+  "executable": "C:\\llama-cpp-src\\engines\\b10079-mtp-215tps\\llama-server.exe",
+  "command_line": "\"C:\\llama-cpp-src\\engines\\b10079-mtp-215tps\\llama-server.exe\" -m C:\\llama-cpp-src\\Qwen3.6-35B-A3B-MTP-GGUF\\Qwen3.6-35B-A3B-UD-Q3_K_M.gguf --jinja --spec-type draft-mtp --spec-draft-n-max 4 --spec-draft-n-min 0 --spec-draft-p-min 0.25 --spec-draft-p-split 0.10 --backend-sampling --spec-draft-device CUDA0 --spec-draft-ngl all --spec-draft-threads 10 --spec-draft-threads-batch 10 --alias qwen3.6-35b-a3b@q3_k_m --host 127.0.0.1 --port 18080 -ngl all -c 150000 -b 2048 -ub 512 -t 10 -tb 10 -np 1 -fa on --no-mmap -ctk f16 -ctv f16 --reasoning off --reasoning-format none --temp 0.6 --top-k 20 --top-p 0.95 --min-p 0.0 --no-ui --perf",
+  "executable_sha256": "A263CC1A832D332D7A8CFBE7B36EBD340D573ACF979F1EDE0C02BD166F678DE2",
+  "cuda_sha256": "2E28A348E24624113B2B5480754D29B76669164A98900092E448709D328DAD67",
+  "model": "C:\\llama-cpp-src\\Qwen3.6-35B-A3B-MTP-GGUF\\Qwen3.6-35B-A3B-UD-Q3_K_M.gguf",
+  "model_sha256": "8966DD0CD8C543C4228490A2A8B0E0814FC4F1E6A8E199CEED4DE6754AE7B8E1",
+  "alias": "qwen3.6-35b-a3b@q3_k_m",
+  "verified": true
+}

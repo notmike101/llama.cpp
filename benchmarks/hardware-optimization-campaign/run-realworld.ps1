@@ -6,9 +6,12 @@ param(
     [int[]]$Seeds = @(101, 202, 303, 404, 505),
     [int]$DraftMax = 4,
     [int]$DraftMin = 0,
+    [string]$SpecType = 'draft-mtp',
     [double]$DraftPMin = 0.25,
     [double]$DraftPSplit = 0.10,
     [int]$Threads = 10,
+    [int]$Batch = 2048,
+    [int]$UBatch = 512,
     [ValidateSet('stream', 'nonstream')][string]$Mode = 'stream',
     [string]$PromptFile = '',
     [ValidateRange(0, 5000)][int]$ContextRepeat = 0,
@@ -21,9 +24,11 @@ param(
     [ValidateSet(0, 1)][int]$SsmDirectState = 1,
     [ValidateSet(0, 1)][int]$GdnProjectionFusion = 1,
     [ValidateSet(0, 1)][int]$GdnDirectStateGather = 1,
+    [ValidateSet(0, 1)][int]$DeviceCheckpoint = 0,
     [ValidateRange(0, 248320)][int]$MtpVocab = 0,
     [switch]$NoHost,
-    [ValidateRange(0, 4096)][int]$CacheReuse = 0
+    [ValidateRange(0, 4096)][int]$CacheReuse = 0,
+    [string[]]$ExtraArgs = @()
 )
 
 Set-StrictMode -Version Latest
@@ -131,6 +136,7 @@ $env:GGML_CUDA_Q8_PERSISTENT_SOURCE_REUSE = [string]$Q8PersistentSourceReuse
 $env:LLAMA_CUDA_SSM_CONV_DIRECT_STATE = [string]$SsmDirectState
 $env:LLAMA_CUDA_GDN_PROJECTION_FUSION = [string]$GdnProjectionFusion
 $env:LLAMA_CUDA_GDN_DIRECT_STATE_GATHER = [string]$GdnDirectStateGather
+$env:LLAMA_SERVER_DEVICE_CHECKPOINT = [string]$DeviceCheckpoint
 if ($MtpVocab -gt 0) {
     $env:LLAMA_QWEN35_MTP_VOCAB = [string]$MtpVocab
 } else {
@@ -139,16 +145,16 @@ if ($MtpVocab -gt 0) {
 $hostArgs = if ($NoHost) { @('--no-host') } else { @() }
 $cacheArgs = if ($CacheReuse -gt 0) { @('--cache-reuse', "$CacheReuse") } else { @() }
 $args = @(
-    '-m', $model, '--jinja', '--spec-type', 'draft-mtp', '--spec-draft-n-max', "$DraftMax",
+    '-m', $model, '--jinja', '--spec-type', $SpecType, '--spec-draft-n-max', "$DraftMax",
     '--spec-draft-n-min', "$DraftMin", '--spec-draft-p-min', "$DraftPMin", '--spec-draft-p-split', "$DraftPSplit",
     '--backend-sampling', '--spec-draft-device', 'CUDA0', '--spec-draft-ngl', 'all',
     '--spec-draft-threads', "$Threads", '--spec-draft-threads-batch', "$Threads",
     '--alias', 'qwen3.6-35b-a3b@q3_k_m', '--host', '127.0.0.1', '--port', "$Port",
-    '-ngl', 'all', '-c', '150000', '-b', '2048', '-ub', '512', '-t', "$Threads", '-tb', "$Threads",
+    '-ngl', 'all', '-c', '150000', '-b', "$Batch", '-ub', "$UBatch", '-t', "$Threads", '-tb', "$Threads",
     '-np', '1', '-fa', 'on', '--no-mmap', '-ctk', 'f16', '-ctv', 'f16', '--reasoning', 'off',
     '--reasoning-format', 'none', '--temp', '0.6', '--top-k', '20', '--top-p', '0.95', '--min-p', '0.0',
     '--poll', "$Poll", '--spec-draft-poll', "$DraftPoll", '--no-ui', '--perf'
-) + $hostArgs + $cacheArgs
+) + $hostArgs + $cacheArgs + $ExtraArgs
 $before = [int](& nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits)
 $process = Start-Process -FilePath $Engine -ArgumentList $args -RedirectStandardOutput $serverOut -RedirectStandardError $serverLog -PassThru -WindowStyle Hidden
 try {
@@ -166,7 +172,7 @@ try {
     [pscustomobject]@{ pid = $live.ProcessId; executable = $live.ExecutablePath; command_line = $live.CommandLine; executable_sha256 = (Get-FileHash $Engine -Algorithm SHA256).Hash; cuda_sha256 = (Get-FileHash (Join-Path (Split-Path $Engine) 'ggml-cuda.dll') -Algorithm SHA256).Hash; model = $model; model_sha256 = (Get-FileHash $model -Algorithm SHA256).Hash; alias = $aliases; verified = $true } | ConvertTo-Json -Depth 8 | Set-Content (Join-Path $output 'IDENTITY.json')
     if (-not $SkipWarmup) { Invoke-Stream -Seed 999 -RunDirectory (Join-Path $output 'WARMUP') | ConvertTo-Json | Set-Content (Join-Path $output 'WARMUP.json') }
     $rows = @($Seeds | ForEach-Object { Invoke-Stream -Seed $_ -RunDirectory (Join-Path $output "seed-$_") })
-    $summary = [ordered]@{ mode = $Mode; warmup = -not $SkipWarmup; prompt_file = $PromptFile; context_repeat = $ContextRepeat; max_tokens = $MaxTokens; seeds = $Seeds; stream_total_tps_median = Get-Median @($rows.stream_total_tps); stream_generation_only_tps_median = Get-Median @($rows.stream_generation_only_tps); server_decode_tps_median = Get-Median @($rows.server_decode_tps); ttft_ms_median = Get-Median @($rows.ttft_ms); raw_results = $rows }
+    $summary = [ordered]@{ mode = $Mode; warmup = -not $SkipWarmup; prompt_file = $PromptFile; context_repeat = $ContextRepeat; max_tokens = $MaxTokens; spec_type = $SpecType; batch = $Batch; ubatch = $UBatch; seeds = $Seeds; stream_total_tps_median = Get-Median @($rows.stream_total_tps); stream_generation_only_tps_median = Get-Median @($rows.stream_generation_only_tps); server_decode_tps_median = Get-Median @($rows.server_decode_tps); ttft_ms_median = Get-Median @($rows.ttft_ms); raw_results = $rows }
     $summary | ConvertTo-Json -Depth 10 | Set-Content (Join-Path $output 'SUMMARY.json')
     $summary | ConvertTo-Json -Depth 10
 } finally {

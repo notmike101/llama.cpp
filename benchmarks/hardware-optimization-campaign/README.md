@@ -52,3 +52,53 @@ Improvement over the original official B001 median of 171.54 tok/s: +44.95 tok/s
 Retained stack: synchronized-hidden-state removal, Q8_1 quantization at 128 threads, direct CUDA SSM convolution state with MTP rollback snapshots, quantized beta-projection sigmoid fusion, persistent alias-safe Q8_1 activation reuse, direct runtime-index GDN state gathering, three/one warps for the Q6_K one/five-column shapes, four warps for Q8_0 five-column verification, one fused MoE row per block for IQ3_S gate/up projections, a dual IQ3_S dot product that reuses Q8 activations, four MoE rows per block for unfused IQ3_XXS, eight for IQ4_XS, and exact CUB 64x4 router sorting.
 
 Artifacts: ../Q006-iq3-dual-rpb1-five.stderr.log and Q006-iq3-dual-rpb1-five-response-1.json through Q006-iq3-dual-rpb1-five-response-6.json. The launcher is ../../Qwen3.6-35B-A3B-MTP-GGUF/run-qwen.bat.
+
+## 2026-08-01 current stable control
+
+The current production launcher was measured again before tuning. Unlocked
+five-seed medians were 188.51 and 197.41 tok/s, confirming material boost and
+power drift. With reversible stock-limit clock locks at 1800 MHz core and 9751
+MHz memory, the fixed five-seed streamed end-to-end median was 195.91 tok/s
+(197.95, 185.71, 195.91, 197.95, 194.02). Server decode median was 212.29
+tok/s and TTFT median was 130.62 ms. All five generated programs compiled with
+MSVC C++20 `/W4 /WX`, executed, and passed. The paired +5 target is therefore
+200.91 tok/s under locked comparison conditions, followed by unlocked
+production validation.
+
+No configuration candidate qualified. `--no-host` reached 196.11, p-min 0.25
+reached 184.16, microbatch 256 reached 196.96 on three seeds, microbatch 1024
+reached 191.89, CUDA graph optimization reached 190.69, p-split 0 reached
+195.83 on five seeds, draft n-min 1/2 reached 193.63/188.76, and a 1950 MHz
+clock lock reached 191.54 on five seeds. The mixed current-source engine and
+the later K718 engine also regressed. Independent MTP plus ngram-mod reached
+155.27 and changed trajectories, matching upstream reports that the two
+strategies are not pipelined.
+
+Trace inspection corrected the apparent sorting opportunity: the 1.6%
+`k_argsort` kernel sorts the 256-expert MoE router, while actual vocabulary
+top-k totals only about 0.3%. A follow-up SM86 launch-bounds experiment on the
+dominant Q8_0 five-column kernel forced higher occupancy but regressed from an
+adjacent 195.41 tok/s control to 191.78 tok/s. It was removed. GPU and memory
+clock locks were reset and no server remains.
+
+Further locked-clock screens also rejected Q8_0 warp-first reduction (186.40
+tok/s), draft p-min 0.19/0.21 (193.28/197.18), `--no-host` plus p-min 0.21
+(193.67), and 5% polling (192.62). Shortening the recurrent prompt checkpoint
+tail from four tokens to one did not reduce its 52-61 ms fixed processing cost,
+changed sampled trajectories, and reached 192.53 tok/s, so it was restored.
+
+## 2026-08-02 device-checkpoint qualification
+
+The promoted profile keeps one metadata-guarded recurrent checkpoint shadow on
+device for the single-slot server, skips the exact duplicate save after restore,
+uses `--no-host`, and locks the RTX 3090 at the stock-supported 1905 MHz core and
+9751 MHz memory clocks. Three complete five-seed streamed batches measured
+208.95, 198.50, and 199.04 tok/s medians. The ordinary median over all 15 raw
+runs was 202.15 tok/s, +6.23 tok/s over B070's exact 195.912 tok/s baseline.
+
+All fixed-seed programs were byte-identical across repeats and passed MSVC
+C++20 `/W4 /WX` compile and runtime checks. Draft acceptance remained
+81.742%-86.643%. Warm/cold, streamed/non-streamed, 13,597-token, and
+135,097-token validations passed, with VRAM returning exactly to baseline.
+The launcher enables the device shadow only for its one-slot profile and resets
+the reversible clock locks when the server exits.

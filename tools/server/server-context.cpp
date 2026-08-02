@@ -176,6 +176,10 @@ struct server_slot {
     std::vector<int32_t> spec_i_batch;
     common_prompt_checkpoint spec_ckpt;
 
+    common_prompt_checkpoint prompt_checkpoint_device;
+    const common_prompt_checkpoint * prompt_checkpoint_device_source = nullptr;
+    bool prompt_checkpoint_restored = false;
+
     // TODO: move members that belong to the task (such as `generated_text`, `has_new_line`) to task_results_state
     //       see https://github.com/ggml-org/llama.cpp/pull/18283#issuecomment-3710175837
     std::unique_ptr<const server_task> task;
@@ -242,6 +246,7 @@ struct server_slot {
     }
 
     bool prompt_load(server_prompt_cache & prompt_cache, const server_tokens & tokens) {
+        clear_prompt_checkpoint_device();
         bool res = prompt_cache.load(prompt, tokens, ctx_tgt, ctx_dft, id);
         if (!res) {
             SLT_WRN(*this, "%s", "failed to load prompt from cache\n");
@@ -259,6 +264,13 @@ struct server_slot {
         }
 
         prompt.clear();
+        clear_prompt_checkpoint_device();
+    }
+
+    void clear_prompt_checkpoint_device() {
+        prompt_checkpoint_device.clear();
+        prompt_checkpoint_device_source = nullptr;
+        prompt_checkpoint_restored = false;
     }
 
     std::vector<common_adapter_lora_info> lora;
@@ -295,6 +307,7 @@ struct server_slot {
         SLT_DBG(*this, "%s", "\n");
 
         n_prompt_tokens_cache = 0;
+        prompt_checkpoint_restored = false;
 
         last_nl_pos    = 0;
         generated_text = "";
@@ -686,6 +699,7 @@ struct server_slot {
         other.n_prompt_tokens_processed = n_prompt_tokens_processed;
 
         other.prompt = prompt.clone();
+        other.clear_prompt_checkpoint_device();
         other.init_sampler();
     }
 
@@ -1691,6 +1705,7 @@ private:
                 if (lora_should_clear_cache(slot.lora, task_loras)) {
                     SLT_TRC(slot, "clearing cache for lora change. %zu loras -> %zu loras\n", slot.lora.size(), task.params.lora.size());
                     slot.prompt.clear();
+                    slot.clear_prompt_checkpoint_device();
                 } else {
                     SLT_TRC(slot, "keeping cache for alora. %zu target loras\n", task_loras.size());
                 }
@@ -2290,9 +2305,34 @@ private:
         return true;
     }
 
+    static bool device_checkpoints_enabled() {
+        static const bool use_device_checkpoint = []() {
+            const char * value = std::getenv("LLAMA_SERVER_DEVICE_CHECKPOINT");
+            return value != nullptr && std::atoi(value) != 0;
+        }();
+        return use_device_checkpoint;
+    }
+
     // n_tokens_cur: the number of tokens added to the batch for the current slot
     void create_checkpoint(server_slot & slot, const int64_t n_tokens_cur, llama_pos pos_min, llama_pos pos_max) {
         const int id_task = slot.task->id;
+        const int64_t n_tokens = slot.prompt.n_tokens() - n_tokens_cur;
+
+        if (slot.prompt_checkpoint_restored) {
+            const auto it = std::find_if(
+                slot.prompt.checkpoints.begin(),
+                slot.prompt.checkpoints.end(),
+                [&](const auto & cur) {
+                    return cur.n_tokens == n_tokens && cur.pos_min == pos_min && cur.pos_max == pos_max;
+                });
+
+            if (it != slot.prompt.checkpoints.end()) {
+                SLT_TRC(slot,
+                        "reusing restored context checkpoint (pos_min = %d, pos_max = %d, n_tokens = %" PRId64 ", size = %.3f MiB)\n",
+                        it->pos_min, it->pos_max, it->n_tokens, (float) it->size() / 1024 / 1024);
+                return;
+            }
+        }
 
         // evict checkpoints within min-step of a previous checkpoint, unless they were
         // created by the current task
@@ -2327,12 +2367,22 @@ private:
         // [TAG_CHECKPOINTS_FIX_POS_MIN]
         // TODO: here we incorrectly deterimne that the saved checkpoint data covers the [pos_min, pos_max] range
         //       this is not true for SWA models: https://github.com/ggml-org/llama.cpp/pull/24411#issuecomment-4677983225
-        cur.update_pos(slot.prompt.n_tokens() - n_tokens_cur, pos_min, pos_max);
+        cur.update_pos(n_tokens, pos_min, pos_max);
 
         cur.update_tgt(ctx_tgt, slot.id, LLAMA_STATE_SEQ_FLAGS_PARTIAL_ONLY);
         cur.update_dft(ctx_dft, slot.id, LLAMA_STATE_SEQ_FLAGS_PARTIAL_ONLY);
         // stash the draft's speculative state with the checkpoint
         common_speculative_get_state(spec.get(), slot.id, cur.data_spec);
+
+        if (device_checkpoints_enabled() && params_base.n_parallel == 1) {
+            const auto device_flags = (llama_state_seq_flags) (
+                LLAMA_STATE_SEQ_FLAGS_PARTIAL_ONLY | LLAMA_STATE_SEQ_FLAGS_ON_DEVICE);
+            slot.prompt_checkpoint_device.clear();
+            slot.prompt_checkpoint_device.update_pos(cur.n_tokens, cur.pos_min, cur.pos_max);
+            slot.prompt_checkpoint_device.update_tgt(ctx_tgt, slot.id, device_flags);
+            slot.prompt_checkpoint_device.update_dft(ctx_dft, slot.id, device_flags);
+            slot.prompt_checkpoint_device_source = &cur;
+        }
 
         SLT_TRC(slot,
                 "created context checkpoint %d of %d (pos_min = %d, pos_max = %d, n_tokens = %" PRId64 ", size = %.3f MiB)\n",
@@ -2574,11 +2624,13 @@ private:
                     size_t nread = llama_state_seq_load_file(ctx_tgt, filepath.c_str(), slot->id, tokens.data(), tokens.size(), &token_count);
                     if (nread == 0) {
                         slot->prompt.clear(); // KV may already been invalidated?
+                        slot->clear_prompt_checkpoint_device();
                         send_error(task, "Unable to restore slot, no available space in KV cache or invalid slot save file", ERROR_TYPE_INVALID_REQUEST);
                         break;
                     }
                     tokens.resize(token_count);
                     slot->prompt.clear();
+                    slot->clear_prompt_checkpoint_device();
                     slot->prompt.tokens.insert(tokens);
 
                     const int64_t t_end = ggml_time_us();
@@ -2902,6 +2954,7 @@ private:
                     new_tokens.resize(slot.prompt.tokens.size() - n_discard);
 
                     slot.prompt.clear();
+                    slot.clear_prompt_checkpoint_device();
                     slot.prompt.tokens.insert(new_tokens);
                 }
 
@@ -3306,14 +3359,29 @@ private:
 
                                     if (!do_reset) {
                                         // restore the context checkpoint
-                                        it->load_tgt(ctx_tgt, slot.id, LLAMA_STATE_SEQ_FLAGS_PARTIAL_ONLY);
-                                        it->load_dft(ctx_dft, slot.id, LLAMA_STATE_SEQ_FLAGS_PARTIAL_ONLY);
+                                        const auto & device = slot.prompt_checkpoint_device;
+                                        const bool use_device =
+                                            device_checkpoints_enabled() && params_base.n_parallel == 1 &&
+                                            slot.prompt_checkpoint_device_source == &*it &&
+                                            device.n_tokens == it->n_tokens &&
+                                            device.pos_min == it->pos_min &&
+                                            device.pos_max == it->pos_max;
+                                        if (use_device) {
+                                            const auto device_flags = (llama_state_seq_flags) (
+                                                LLAMA_STATE_SEQ_FLAGS_PARTIAL_ONLY | LLAMA_STATE_SEQ_FLAGS_ON_DEVICE);
+                                            device.load_tgt(ctx_tgt, slot.id, device_flags);
+                                            device.load_dft(ctx_dft, slot.id, device_flags);
+                                        } else {
+                                            it->load_tgt(ctx_tgt, slot.id, LLAMA_STATE_SEQ_FLAGS_PARTIAL_ONLY);
+                                            it->load_dft(ctx_dft, slot.id, LLAMA_STATE_SEQ_FLAGS_PARTIAL_ONLY);
+                                        }
                                         // restore the draft's speculative state
                                         common_speculative_set_state(spec.get(), slot.id, it->data_spec);
+                                        slot.prompt_checkpoint_restored = true;
 
                                         pos_next = std::min(pos_next, std::max(it->pos_min + 1, it->pos_max));
                                         n_past   = std::min(slot.prompt.tokens.size_up_to_pos(pos_next), (size_t) it->n_tokens);
-                                        SLT_TRC(slot, "restored context checkpoint (pos_min = %d, pos_max = %d, n_tokens = %" PRId64 ", n_past = %d, size = %.3f MiB)\n", it->pos_min, it->pos_max, it->n_tokens, n_past, (float) it->size() / 1024 / 1024);
+                                        SLT_TRC(slot, "restored context checkpoint%s (pos_min = %d, pos_max = %d, n_tokens = %" PRId64 ", n_past = %d, size = %.3f MiB)\n", use_device ? " on device" : "", it->pos_min, it->pos_max, it->n_tokens, n_past, (float) it->size() / 1024 / 1024);
                                     }
 
                                     if (do_reset) {
@@ -3563,6 +3631,7 @@ private:
                     if (do_checkpoint) {
                         create_checkpoint(slot, n_tokens_cur, pos_min, pos_max);
                     }
+                    slot.prompt_checkpoint_restored = false;
                 }
 
                 if (!slot_batched) {

@@ -1,8 +1,8 @@
 @echo off
 setlocal EnableExtensions
 
-rem Optimized llama.cpp b10079 CUDA build qualified at 191.42 tok/s streamed E2E on RTX 3090.
-if not defined LLAMA_SERVER set "LLAMA_SERVER=C:\llama-cpp-src\engines\b10079-mtp-215tps\llama-server.exe"
+rem Optimized llama.cpp b10085 CUDA build qualified at 202.15 tok/s streamed E2E on RTX 3090.
+if not defined LLAMA_SERVER set "LLAMA_SERVER=C:\llama-cpp-src\engines\b10085-qwen36-device-checkpoint\llama-server.exe"
 if not defined MODEL set "MODEL=C:\llama-cpp-src\Qwen3.6-35B-A3B-MTP-GGUF\Qwen3.6-35B-A3B-UD-Q3_K_M.gguf"
 if not defined HOST set "HOST=0.0.0.0"
 if not defined PORT set "PORT=8080"
@@ -14,6 +14,8 @@ if not defined UBATCH set "UBATCH=512"
 if not defined THREADS set "THREADS=10"
 if not defined PARALLEL set "PARALLEL=1"
 if not defined EXTRA_ARGS set "EXTRA_ARGS="
+if not defined GPU_CLOCK set "GPU_CLOCK=1905"
+if not defined GPU_MEMORY_CLOCK set "GPU_MEMORY_CLOCK=9751"
 
 rem Sampling defaults applied to every request unless the caller overrides.
 rem Use LLAMA_TEMP because TEMP is a standard Windows directory variable.
@@ -34,6 +36,16 @@ set "GGML_CUDA_Q8_PERSISTENT_SOURCE_REUSE=1"
 set "LLAMA_CUDA_SSM_CONV_DIRECT_STATE=1"
 set "LLAMA_CUDA_GDN_PROJECTION_FUSION=1"
 set "LLAMA_CUDA_GDN_DIRECT_STATE_GATHER=1"
+set "LLAMA_SERVER_DEVICE_CHECKPOINT=1"
+
+if not "%GPU_CLOCK%"=="0" (
+    nvidia-smi -lgc "%GPU_CLOCK%","%GPU_CLOCK%" >nul
+    if errorlevel 1 goto clock_error
+)
+if not "%GPU_MEMORY_CLOCK%"=="0" (
+    nvidia-smi -lmc "%GPU_MEMORY_CLOCK%","%GPU_MEMORY_CLOCK%" >nul
+    if errorlevel 1 goto clock_error
+)
 
 "%LLAMA_SERVER%" ^
     -m "%MODEL%" ^
@@ -60,6 +72,7 @@ set "LLAMA_CUDA_GDN_DIRECT_STATE_GATHER=1"
     -np "%PARALLEL%" ^
     -fa on ^
     --no-mmap ^
+    --no-host ^
     -ctk f16 ^
     -ctv f16 ^
     --reasoning "%REASONING%" ^
@@ -73,4 +86,13 @@ set "LLAMA_CUDA_GDN_DIRECT_STATE_GATHER=1"
     %SPEC_ARGS% ^
     %EXTRA_ARGS%
 
-exit /b %ERRORLEVEL%
+set "SERVER_EXIT=%ERRORLEVEL%"
+goto clock_cleanup
+
+:clock_error
+set "SERVER_EXIT=%ERRORLEVEL%"
+
+:clock_cleanup
+if not "%GPU_CLOCK%"=="0" nvidia-smi -rgc >nul
+if not "%GPU_MEMORY_CLOCK%"=="0" nvidia-smi -rmc >nul
+exit /b %SERVER_EXIT%

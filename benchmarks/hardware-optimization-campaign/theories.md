@@ -296,3 +296,124 @@ rate therefore does not transfer through that setting alone. A second five-seed
 `--no-host` check reached 205.49 tok/s versus the immediately preceding 204.11
 control. The 1.38 tok/s difference is inside the campaign's observed run variance,
 so `--no-host` remains unpromoted.
+
+## B067-M083 - fresh real-use baseline and configuration sweep
+
+The first wrapper launch, B067, was invalid because the parent wrapper timed
+out before identity capture or requests. Its exact server PID was stopped and
+VRAM returned to baseline. B068 and B069 then measured the untouched promoted
+launcher at 188.51 and 197.41 tok/s streamed medians. Because this spread is
+too large for a stable threshold, B070 locked stock-supported clocks at 1800
+MHz core and 9751 MHz memory and established a 195.91 tok/s five-seed control.
+
+S071 (`--no-host`), C072 (mixed current-source engine), M073 (p-min 0.25),
+C074 (K718 engine), R075/R076 (microbatch 256/1024), G077 (CUDA graph
+optimization), H078 (1950 MHz core), M079 (p-split 0), M080/M081 (draft n-min
+1/2), C082 (CUDA 12 engine), and M083 (independent MTP plus ngram-mod) all
+failed the 200.91 tok/s paired target. H078 was slower under the stock power
+limit. C082 and M083 also changed trajectories. All candidates are rejected;
+the production launcher remains unchanged.
+
+P020 attributes 14.1% of GPU time to the 248,320-row Q6_K single-column output
+head. The 1.6% `k_argsort` entry is the 256-expert MoE router, not vocabulary
+sampling. The two CUB vocabulary top-k stages total only about 0.3%, so fusing
+projection with vocabulary top-k cannot plausibly supply the required gain by
+itself. Local draft-vocabulary truncation was already rejected because it
+excluded valid tokens or paid fill/scatter costs.
+
+## P084-K085 - Q8_0 J5 occupancy screen
+
+P084 profiled the dominant Q8_0 five-column kernel on SM86. Its 72 registers
+per thread limited theoretical occupancy to 58.33%; achieved occupancy was
+55.49%, DRAM throughput 80.84%, and compute throughput 77.39%. K085 requested
+eight resident blocks only for Q8_0 J5 on SM86, forcing the compiler toward a
+64-register allocation without changing kernel math. Under identical locked
+clocks and seeds 101/202/303, the candidate reached 191.78 tok/s versus 195.41
+for the adjacent control. Every paired seed regressed, so the launch-bounds
+change was removed.
+
+## K086 - Q8_0 J5 warp-first reduction
+
+The retained four-warp Q8_0 five-column kernel exchanges 960 lane partials
+through shared memory. K086 instead reduced each row and column inside its
+source warp and exchanged 40 scalar warp totals. This reduced static shared
+storage from 3,840 to 160 bytes but added shuffle work in all four warps and
+changed the final floating-point reduction order. Its locked three-seed median
+was 186.40 tok/s, well below the adjacent 195.41 control, and sampled
+trajectories changed. The specialization was removed.
+
+## P087-M089-K091 - IQ3 profile, threshold neighborhood, and prompt tail
+
+P087 measured the fused IQ3_S gate/up kernel at 64 registers, 61.54% achieved
+occupancy, 57.37% DRAM throughput, 52.76% compute throughput, and a 95.86% L1
+hit rate. Previously tested alternate warp and row geometries already cover
+the obvious launch changes. Draft p-min 0.19 and 0.21 reached 193.28 and
+197.18 tok/s on three seeds; neither beat the 0.20 control target.
+
+Slot tracing showed that recurrent checkpoints restore an identical 94-token
+prompt at token 90, causing a four-token prompt tail. K091 changed the final
+checkpoint offset from four tokens to one. The server then reported one token
+processed, but prompt time remained 52-61 ms, sampled trajectories changed,
+seed 202 draft acceptance fell to 76.16%, and the median was 192.53 tok/s.
+The four-token checkpoint offset was restored.
+
+M092 combined `--no-host` with draft p-min 0.21 and reached 193.67 tok/s.
+R093 tested 5% target and draft polling and reached 192.62 tok/s with a higher
+138.21 ms TTFT median. Both runtime combinations were rejected.
+
+## K094-K100 - restored checkpoint reuse and Q8_0 three-warps
+
+Tracing an identical warm prompt showed that restoring the recurrent checkpoint
+was followed immediately by serializing the same 62.991 MiB state again. K094
+skipped only that exact duplicate save. A debug request remained byte-identical
+and reduced prompt processing from 57.69 ms to 33.62 ms. The first five-seed
+screen appeared to improve the matched control by 5.54 tok/s, but an expanded
+nine-seed comparison measured 198.98 tok/s for the candidate and 198.03 tok/s
+for the adjacent control. The repeatable TTFT reduction was 24.24 ms, but the
+client-visible gain was only 0.94 tok/s. The change was removed.
+
+Combining checkpoint reuse with `--no-host` reached 201.27 tok/s once and
+200.55 tok/s on an exact five-seed repeat, below the fixed 200.91 tok/s target.
+Draft p-min 0.21 also remained below target at 199.91 tok/s. None were promoted.
+
+P020 attributes 19.2% of GPU time to Q8_0 five-column MMVQ. The retained four
+warps had already beaten one- and two-warp variants on the current stack. K100
+screened the remaining three-warp geometry and reached only 191.29 tok/s over
+three seeds. It also changed sampled trajectories, so four warps was restored.
+
+The existing on-device sequence-state API cannot directly back the server's
+checkpoint list because its device storage is keyed only by sequence ID; every
+checkpoint for a slot would overwrite the previous device image. A safe future
+prototype must preserve the host checkpoint list and use a metadata-guarded
+device shadow only for the most recently saved checkpoint, with host fallback.
+
+## K101-K127 - on-device checkpoint shadow and 1905 MHz qualification
+
+K101 preserved the complete host checkpoint list and added one opt-in,
+metadata-guarded device shadow for the newest checkpoint. Prompt replacement,
+loading, cloning, truncation, and clearing invalidate the shadow. A mismatch
+uses the original host restore path. The optimization is restricted to one
+parallel slot because fragmented recurrent ranges cannot use the device-state
+API. Restoring the 62.991 MiB recurrent checkpoint on device and skipping its
+immediate duplicate save reduced the traced four-token prompt tail from 57.69
+ms to 21.42 ms while preserving byte-identical output.
+
+One- and two-token checkpoint tails took 26.36 and 22.35 ms and were removed;
+four tokens remains the fastest MTP graph shape. Device restore at the original
+1800 MHz lock improved an adjacent five-seed median by 5.16 tok/s once, but an
+order-reversed repeat did not hold the full gain. At the stock-supported 1905
+MHz core and 9751 MHz memory locks, with `--no-host`, the exact promoted
+binary measured three complete five-seed batches. Their streamed end-to-end
+medians were 208.95, 198.50, and 199.04 tok/s. The ordinary median over all 15
+raw runs was 202.15 tok/s, a 6.23 tok/s gain over the exact locked B070
+baseline of 195.912 tok/s.
+
+All five fixed-seed outputs were byte-identical across the three final batches,
+compiled under MSVC C++20 `/W4 /WX`, executed, and passed their assertions.
+MTP acceptance was unchanged at 81.742%-86.643%. The final binary also passed
+warm non-streamed and cold streamed requests, byte-identical warm/cold 13,597
+token requests, and a 135,097-token cold request inside the configured 150k
+context. The near-maximum request retained 84.592% draft acceptance. Each
+matrix run returned VRAM exactly to its pre-run level. An exploratory long
+prompt at seed 707 produced the same failing assertion on candidate and
+control, proving it was not introduced by the optimization.

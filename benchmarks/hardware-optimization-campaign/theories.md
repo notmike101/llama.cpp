@@ -272,3 +272,18 @@ runtime settings into the launcher; no source or binary change is required.
   full-vocabulary opportunity is a fused projection/top-k path that avoids
   materializing and sorting all 248,320 logits; this is a larger graph/backend
   pattern and requires explicit review before implementation.
+
+## K061-K064 - Q6_K warp-first reduction
+
+Hypothesis: the 248,320-row Q6_K target head spends avoidable time storing and
+reloading every lane's partial sum across three warps. Reducing within each warp
+first and sharing one partial per warp could reduce synchronization traffic while
+preserving the full vocabulary and output quality.
+
+An opt-in specialization was restricted to Q6_K, one output column, hidden width
+4096, and exactly 248,320 rows. It passed all 14 focused Q6_K multiplication tests,
+and all three paired generated sources were byte-identical and passed strict C++20
+compilation and execution. The first three-seed screen reached 200.76 tok/s versus
+195.91 for its control, but a reverse-order five-seed repeat reached only 193.34
+versus 204.11 for the control. The apparent gain was run variance. The
+specialization was removed.

@@ -287,3 +287,12 @@ compilation and execution. The first three-seed screen reached 200.76 tok/s vers
 195.91 for its control, but a reverse-order five-seed repeat reached only 193.34
 versus 204.11 for the control. The apparent gain was run variance. The
 specialization was removed.
+
+## S065-S066 - historical configuration recovery checks
+
+The historical V018 result used p-min 0.25, but replaying that setting on the
+current rebuilt source reached only 195.64 tok/s over three seeds. The historical
+rate therefore does not transfer through that setting alone. A second five-seed
+`--no-host` check reached 205.49 tok/s versus the immediately preceding 204.11
+control. The 1.38 tok/s difference is inside the campaign's observed run variance,
+so `--no-host` remains unpromoted.

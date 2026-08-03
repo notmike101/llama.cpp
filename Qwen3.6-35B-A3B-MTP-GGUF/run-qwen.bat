@@ -1,8 +1,8 @@
 @echo off
 setlocal EnableExtensions
 
-rem Optimized llama.cpp b10085 CUDA build qualified at 217.25 tok/s streamed generation on RTX 3090.
-if not defined LLAMA_SERVER set "LLAMA_SERVER=C:\llama-cpp-src\engines\b10085-qwen36-device-checkpoint\llama-server.exe"
+rem Optimized llama.cpp b10088 CUDA build qualified at 236.27 tok/s streamed generation on RTX 3090.
+if not defined LLAMA_SERVER set "LLAMA_SERVER=C:\llama-cpp-src\engines\b10088-qwen36-moe-vocab65\llama-server.exe"
 if not defined MODEL set "MODEL=C:\llama-cpp-src\Qwen3.6-35B-A3B-MTP-GGUF\Qwen3.6-35B-A3B-UD-Q3_K_M.gguf"
 if not defined HOST set "HOST=0.0.0.0"
 if not defined PORT set "PORT=8080"
@@ -29,6 +29,7 @@ if not defined SPEC_DRAFT_N_MAX set "SPEC_DRAFT_N_MAX=5"
 if not defined SPEC_DRAFT_N_MIN set "SPEC_DRAFT_N_MIN=0"
 if not defined SPEC_DRAFT_P_MIN set "SPEC_DRAFT_P_MIN=0.0"
 if not defined SPEC_DRAFT_P_SPLIT set "SPEC_DRAFT_P_SPLIT=0.10"
+if not defined MTP_DRAFT_VOCAB set "MTP_DRAFT_VOCAB=65536"
 if not defined SPEC_ARGS set "SPEC_ARGS="
 
 set "GGML_CUDA_Q8_SOURCE_REUSE=1"
@@ -37,6 +38,7 @@ set "LLAMA_CUDA_SSM_CONV_DIRECT_STATE=1"
 set "LLAMA_CUDA_GDN_PROJECTION_FUSION=1"
 set "LLAMA_CUDA_GDN_DIRECT_STATE_GATHER=1"
 set "LLAMA_SERVER_DEVICE_CHECKPOINT=1"
+set "LLAMA_QWEN35_MTP_VOCAB=%MTP_DRAFT_VOCAB%"
 
 if not "%GPU_CLOCK%"=="0" (
     nvidia-smi -lgc "%GPU_CLOCK%","%GPU_CLOCK%" >nul

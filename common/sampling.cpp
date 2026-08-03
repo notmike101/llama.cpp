@@ -12,7 +12,7 @@
 #include <climits>
 #include <cmath>
 #include <cstring>
-#if defined(__AVX2__) || defined(_M_AVX2)
+#if defined(__AVX2__) || defined(_MSC_VER)
 #include <immintrin.h>
 #endif
 #include <unordered_map>
@@ -582,6 +582,22 @@ static bool common_sampler_can_fast_sample(const common_sampler * gsmpl) {
         !p.ignore_eos;
 }
 
+static bool common_sampler_has_avx2() {
+#if defined(__AVX2__)
+    return true;
+#elif defined(_MSC_VER) && (defined(_M_X64) || defined(_M_IX86))
+    int regs[4];
+    __cpuid(regs, 1);
+    if ((regs[2] & (1 << 27)) == 0 || (regs[2] & (1 << 28)) == 0 || (_xgetbv(0) & 0x6) != 0x6) {
+        return false;
+    }
+    __cpuidex(regs, 7, 0);
+    return (regs[1] & (1 << 5)) != 0;
+#else
+    return false;
+#endif
+}
+
 static llama_token common_sampler_fast_sample(common_sampler * gsmpl, llama_context * ctx, int idx) {
     constexpr size_t k = 20;
 
@@ -620,33 +636,35 @@ static llama_token common_sampler_fast_sample(common_sampler * gsmpl, llama_cont
     };
 
     llama_token id = (llama_token) k;
-#if defined(__AVX2__) || defined(_M_AVX2)
-    for (; id + 32 <= n_vocab; id += 32) {
-        if (id + 256 < n_vocab) {
-            _mm_prefetch(reinterpret_cast<const char *>(logits + id + 256), _MM_HINT_T0);
+#if defined(__AVX2__) || defined(_MSC_VER)
+    if (common_sampler_has_avx2()) {
+        for (; id + 32 <= n_vocab; id += 32) {
+            if (id + 256 < n_vocab) {
+                _mm_prefetch(reinterpret_cast<const char *>(logits + id + 256), _MM_HINT_T0);
+            }
+            const __m256 threshold = _mm256_set1_ps(cur.front().logit);
+            const unsigned mask0 = (unsigned) _mm256_movemask_ps(
+                _mm256_cmp_ps(_mm256_loadu_ps(logits + id +  0), threshold, _CMP_NLE_UQ));
+            const unsigned mask1 = (unsigned) _mm256_movemask_ps(
+                _mm256_cmp_ps(_mm256_loadu_ps(logits + id +  8), threshold, _CMP_NLE_UQ));
+            const unsigned mask2 = (unsigned) _mm256_movemask_ps(
+                _mm256_cmp_ps(_mm256_loadu_ps(logits + id + 16), threshold, _CMP_NLE_UQ));
+            const unsigned mask3 = (unsigned) _mm256_movemask_ps(
+                _mm256_cmp_ps(_mm256_loadu_ps(logits + id + 24), threshold, _CMP_NLE_UQ));
+
+            consider_mask(id +  0, mask0);
+            consider_mask(id +  8, mask1);
+            consider_mask(id + 16, mask2);
+            consider_mask(id + 24, mask3);
         }
-        const __m256 threshold = _mm256_set1_ps(cur.front().logit);
-        const unsigned mask0 = (unsigned) _mm256_movemask_ps(
-            _mm256_cmp_ps(_mm256_loadu_ps(logits + id +  0), threshold, _CMP_NLE_UQ));
-        const unsigned mask1 = (unsigned) _mm256_movemask_ps(
-            _mm256_cmp_ps(_mm256_loadu_ps(logits + id +  8), threshold, _CMP_NLE_UQ));
-        const unsigned mask2 = (unsigned) _mm256_movemask_ps(
-            _mm256_cmp_ps(_mm256_loadu_ps(logits + id + 16), threshold, _CMP_NLE_UQ));
-        const unsigned mask3 = (unsigned) _mm256_movemask_ps(
-            _mm256_cmp_ps(_mm256_loadu_ps(logits + id + 24), threshold, _CMP_NLE_UQ));
 
-        consider_mask(id +  0, mask0);
-        consider_mask(id +  8, mask1);
-        consider_mask(id + 16, mask2);
-        consider_mask(id + 24, mask3);
-    }
-
-    for (; id + 8 <= n_vocab; id += 8) {
-        const __m256 values = _mm256_loadu_ps(logits + id);
-        const __m256 threshold = _mm256_set1_ps(cur.front().logit);
-        const unsigned mask = (unsigned) _mm256_movemask_ps(
-            _mm256_cmp_ps(values, threshold, _CMP_NLE_UQ));
-        consider_mask(id, mask);
+        for (; id + 8 <= n_vocab; id += 8) {
+            const __m256 values = _mm256_loadu_ps(logits + id);
+            const __m256 threshold = _mm256_set1_ps(cur.front().logit);
+            const unsigned mask = (unsigned) _mm256_movemask_ps(
+                _mm256_cmp_ps(values, threshold, _CMP_NLE_UQ));
+            consider_mask(id, mask);
+        }
     }
 #endif
 

@@ -1,8 +1,8 @@
 @echo off
 setlocal EnableExtensions
 
-rem Optimized llama.cpp b10091 CUDA build qualified at 247.73 tok/s streamed generation on RTX 3090.
-if not defined LLAMA_SERVER set "LLAMA_SERVER=C:\llama-cpp-src\engines\b10091-clean-fast-sample\llama-server.exe"
+rem Optimized llama.cpp b10092 CUDA build qualified at 262.76 tok/s streamed generation on RTX 3090.
+if not defined LLAMA_SERVER set "LLAMA_SERVER=C:\llama-cpp-src\engines\b10092-msvc-avx2-vocab40k\llama-server.exe"
 if not defined MODEL set "MODEL=C:\llama-cpp-src\Qwen3.6-35B-A3B-MTP-GGUF\Qwen3.6-35B-A3B-UD-Q3_K_M.gguf"
 if not defined HOST set "HOST=0.0.0.0"
 if not defined PORT set "PORT=8080"
@@ -29,7 +29,7 @@ if not defined SPEC_DRAFT_N_MAX set "SPEC_DRAFT_N_MAX=5"
 if not defined SPEC_DRAFT_N_MIN set "SPEC_DRAFT_N_MIN=0"
 if not defined SPEC_DRAFT_P_MIN set "SPEC_DRAFT_P_MIN=0.0"
 if not defined SPEC_DRAFT_P_SPLIT set "SPEC_DRAFT_P_SPLIT=0.10"
-if not defined MTP_DRAFT_VOCAB set "MTP_DRAFT_VOCAB=65536"
+if not defined MTP_DRAFT_VOCAB set "MTP_DRAFT_VOCAB=40960"
 if not defined SPEC_ARGS set "SPEC_ARGS="
 
 set "GGML_CUDA_Q8_SOURCE_REUSE=1"

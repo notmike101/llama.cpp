@@ -1471,7 +1471,15 @@ int llama_context::encode(const llama_batch & batch_inp) {
         GGML_ASSERT(backend_res != nullptr);
         GGML_ASSERT(logits.data != nullptr);
 
-        ggml_backend_tensor_get_async(backend_res, t_logits, logits.data, 0, n_tokens*n_vocab*sizeof(float));
+        const size_t n_logits = t_logits->ne[0];
+        if (n_logits == n_vocab) {
+            ggml_backend_tensor_get_async(backend_res, t_logits, logits.data, 0, n_tokens*n_vocab*sizeof(float));
+        } else {
+            for (uint32_t i = 0; i < n_tokens; ++i) {
+                ggml_backend_tensor_get_async(backend_res, t_logits, logits.data + i*n_vocab,
+                        i*n_logits*sizeof(float), n_logits*sizeof(float));
+            }
+        }
     }
 
     // extract embeddings
@@ -1910,7 +1918,15 @@ int llama_context::decode(const llama_batch & batch_inp) {
             if (n_outputs) {
                 GGML_ASSERT( n_outputs_prev + n_outputs <= n_outputs_all);
                 GGML_ASSERT((n_outputs_prev + n_outputs)*n_vocab <= (int64_t) logits.size);
-                ggml_backend_tensor_get_async(backend_res, t_logits, logits_out, 0, n_outputs*n_vocab*sizeof(float));
+                const size_t n_logits = t_logits->ne[0];
+                if (n_logits == n_vocab) {
+                    ggml_backend_tensor_get_async(backend_res, t_logits, logits_out, 0, n_outputs*n_vocab*sizeof(float));
+                } else {
+                    for (uint32_t i = 0; i < n_outputs; ++i) {
+                        ggml_backend_tensor_get_async(backend_res, t_logits, logits_out + i*n_vocab,
+                                i*n_logits*sizeof(float), n_logits*sizeof(float));
+                    }
+                }
             }
         }
 

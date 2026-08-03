@@ -8,6 +8,9 @@
 #include "ggml.h"
 
 #include <algorithm>
+#include <fstream>
+#include <set>
+#include <sstream>
 #include <cctype>
 #include <climits>
 #include <cmath>
@@ -598,6 +601,35 @@ static bool common_sampler_has_avx2() {
 #endif
 }
 
+static const std::vector<llama_token> & common_sampler_fast_token_map() {
+    static const std::vector<llama_token> map = [] {
+        std::vector<llama_token> result;
+        const char * path = std::getenv("LLAMA_QWEN35_TARGET_HOTMAP");
+        if (!path) {
+            return result;
+        }
+        std::set<llama_token> unique_ids;
+        std::istringstream paths(path);
+        std::string map_path;
+        while (std::getline(paths, map_path, ';')) {
+            std::ifstream input(map_path);
+            std::string line;
+            while (std::getline(input, line)) {
+                if (line.rfind("FAST_TOP20", 0) == 0) {
+                    std::istringstream values(line.substr(10));
+                    llama_token id;
+                    while (values >> id) {
+                        unique_ids.insert(id);
+                    }
+                }
+            }
+        }
+        result.assign(unique_ids.begin(), unique_ids.end());
+        return result;
+    }();
+    return map;
+}
+
 static llama_token common_sampler_fast_sample(common_sampler * gsmpl, llama_context * ctx, int idx) {
     constexpr size_t k = 20;
 
@@ -605,13 +637,14 @@ static llama_token common_sampler_fast_sample(common_sampler * gsmpl, llama_cont
     GGML_ASSERT(logits != nullptr);
 
     const llama_vocab * vocab = llama_model_get_vocab(llama_get_model(ctx));
-    const int n_vocab = llama_vocab_n_tokens(vocab);
+    const auto & token_map = common_sampler_fast_token_map();
+    const int n_vocab = token_map.empty() ? llama_vocab_n_tokens(vocab) : (int) token_map.size();
     GGML_ASSERT(n_vocab >= (int) k);
 
     auto & cur = gsmpl->cur;
     cur.resize(k);
     for (size_t i = 0; i < k; ++i) {
-        cur[i] = llama_token_data { (llama_token) i, logits[i], 0.0f };
+        cur[i] = llama_token_data { token_map.empty() ? (llama_token) i : token_map[i], logits[i], 0.0f };
     }
 
     const auto min_heap = [](const llama_token_data & a, const llama_token_data & b) {
@@ -630,7 +663,7 @@ static llama_token common_sampler_fast_sample(common_sampler * gsmpl, llama_cont
             }
 
             std::pop_heap(cur.begin(), cur.end(), min_heap);
-            cur.back() = llama_token_data { candidate, logits[candidate], 0.0f };
+            cur.back() = llama_token_data { token_map.empty() ? candidate : token_map[candidate], logits[candidate], 0.0f };
             std::push_heap(cur.begin(), cur.end(), min_heap);
         }
     };
@@ -674,7 +707,7 @@ static llama_token common_sampler_fast_sample(common_sampler * gsmpl, llama_cont
         }
 
         std::pop_heap(cur.begin(), cur.end(), min_heap);
-        cur.back() = llama_token_data { id, logits[id], 0.0f };
+        cur.back() = llama_token_data { token_map.empty() ? id : token_map[id], logits[id], 0.0f };
         std::push_heap(cur.begin(), cur.end(), min_heap);
     }
 

@@ -1,6 +1,11 @@
 #include "models.h"
 #include "llama-memory-recurrent.h"
 
+#include <vector>
+#include <fstream>
+#include <set>
+#include <sstream>
+
 void llama_model_qwen35moe::load_arch_hparams(llama_model_loader & ml) {
     ml.get_key(LLM_KV_EXPERT_FEED_FORWARD_LENGTH,        hparams.n_ff_exp, false);
     ml.get_key(LLM_KV_EXPERT_SHARED_FEED_FORWARD_LENGTH, hparams.n_ff_shexp, false);
@@ -149,6 +154,108 @@ void llama_model_qwen35moe::load_arch_tensors(llama_model_loader & ml) {
     }
 }
 
+bool llama_model_qwen35moe::load_tensors(llama_model_loader & ml) {
+    if (!llama_model_base::load_tensors(ml)) {
+        return false;
+    }
+
+    if (hparams.no_alloc) {
+        return true;
+    }
+
+    auto materialize = [&](ggml_tensor * source, const std::vector<int32_t> & ids,
+                           ggml_context_ptr & hot_ctx, ggml_backend_buffer_ptr & hot_buf,
+                           ggml_tensor * & hot_head, ggml_tensor * & hot_ids, const char * name) {
+        ggml_init_params ctx_params = {
+            /*.mem_size   =*/ 2*ggml_tensor_overhead(),
+            /*.mem_buffer =*/ nullptr,
+            /*.no_alloc   =*/ true,
+        };
+        hot_ctx.reset(ggml_init(ctx_params));
+        if (!hot_ctx) {
+            throw std::runtime_error("failed to create QWEN35MOE hot-head context");
+        }
+
+        hot_head = ggml_new_tensor_2d(hot_ctx.get(), source->type, source->ne[0], ids.size());
+        hot_ids  = ggml_new_tensor_1d(hot_ctx.get(), GGML_TYPE_I32, ids.size());
+        ggml_set_name(hot_head, name);
+
+        ggml_backend_buffer_type_t buft = ggml_backend_buffer_get_type(source->buffer);
+        hot_buf.reset(ggml_backend_alloc_ctx_tensors_from_buft(hot_ctx.get(), buft));
+        if (!hot_buf) {
+            throw std::runtime_error("failed to allocate QWEN35MOE hot-head buffer");
+        }
+        ggml_backend_buffer_set_usage(hot_buf.get(), GGML_BACKEND_BUFFER_USAGE_WEIGHTS);
+
+        const size_t row_size = source->nb[1];
+        size_t n_prefix = 0;
+        while (n_prefix < ids.size() && ids[n_prefix] == (int32_t) n_prefix) {
+            ++n_prefix;
+        }
+        std::vector<uint8_t> data(row_size*n_prefix);
+        ggml_backend_tensor_get(source, data.data(), 0, data.size());
+        ggml_backend_tensor_set(hot_head, data.data(), 0, data.size());
+
+        data.resize(row_size);
+        for (size_t i = n_prefix; i < ids.size(); ++i) {
+            ggml_backend_tensor_get(source, data.data(), row_size*ids[i], row_size);
+            ggml_backend_tensor_set(hot_head, data.data(), row_size*i, row_size);
+        }
+        ggml_backend_tensor_set(hot_ids, ids.data(), 0, ids.size()*sizeof(ids[0]));
+        LLAMA_LOG_INFO("%s: materialized %zu-token %s (%.2f MiB)\n",
+                __func__, ids.size(), name, ggml_nbytes(hot_head)/1024.0/1024.0);
+    };
+
+    if (const char * target_map_env = std::getenv("LLAMA_QWEN35_TARGET_HOTMAP")) {
+        std::set<int32_t> unique_ids;
+        std::istringstream paths(target_map_env);
+        std::string path;
+        while (std::getline(paths, path, ';')) {
+            std::ifstream input(path);
+            if (!input) {
+                throw std::runtime_error("failed to open QWEN35MOE target hot map");
+            }
+            std::string line;
+            while (std::getline(input, line)) {
+                if (line.rfind("FAST_TOP20", 0) == 0) {
+                    std::istringstream values(line.substr(10));
+                    int32_t id;
+                    while (values >> id) {
+                        GGML_ASSERT(id >= 0 && id < output->ne[1]);
+                        unique_ids.insert(id);
+                    }
+                }
+            }
+        }
+        std::vector<int32_t> ids(unique_ids.begin(), unique_ids.end());
+        GGML_ASSERT(!ids.empty());
+        materialize(output, ids, target_hot_ctx, target_hot_buf, target_hot_head, target_hot_ids,
+                "qwen35moe_target_hot_head");
+    } else if (const char * target_vocab_env = std::getenv("LLAMA_QWEN35_TARGET_VOCAB")) {
+        const int32_t n_prefix = std::atoi(target_vocab_env);
+        GGML_ASSERT(output && n_prefix > 0 && n_prefix <= output->ne[1] && output_s == nullptr);
+        constexpr int32_t tail[] = {
+            101304, 101998, 102978, 104489, 104613, 108679, 110193, 113074, 114773, 117486, 119737,
+            122349, 136553, 138565, 152583, 156879, 159282, 168965, 169261, 170592, 171229, 171446,
+            177235, 177824, 179543, 188169, 201199, 203968, 209933, 218644, 227822, 233743, 236224,
+            243351, 244920, 248044, 248045, 248046, 248058, 248062, 248067, 248069,
+        };
+        std::vector<int32_t> ids;
+        ids.reserve(n_prefix + sizeof(tail)/sizeof(tail[0]));
+        for (int32_t id = 0; id < n_prefix; ++id) {
+            ids.push_back(id);
+        }
+        for (int32_t id : tail) {
+            GGML_ASSERT(id >= n_prefix && id < output->ne[1]);
+            ids.push_back(id);
+        }
+        materialize(output, ids, target_hot_ctx, target_hot_buf, target_hot_head, target_hot_ids,
+                "qwen35moe_target_hot_head");
+    }
+
+    return true;
+}
+
 std::unique_ptr<llm_graph_context> llama_model_qwen35moe::build_arch_graph(const llm_graph_params & params) const {
     if (params.gtype == LLM_GRAPH_TYPE_DECODER_MTP) {
         return std::make_unique<graph_mtp>(*this, params);
@@ -243,7 +350,9 @@ llama_model_qwen35moe::graph::graph(const llama_model & model, const llm_graph_p
     res->t_embd = cur;
 
     // LM head
-    cur = build_lora_mm(model.output, cur, model.output_s);
+    const auto & qwen35moe = static_cast<const llama_model_qwen35moe &>(model);
+    ggml_tensor * head = qwen35moe.target_hot_head ? qwen35moe.target_hot_head : model.output;
+    cur = build_lora_mm(head, cur, model.output_s);
 
     cb(cur, "result_output", -1);
     res->t_logits = cur;

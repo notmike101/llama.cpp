@@ -1,8 +1,8 @@
 @echo off
 setlocal EnableExtensions
 
-rem Optimized llama.cpp compact-target build qualified at 282.60 tok/s streamed generation on RTX 3090.
-if not defined LLAMA_SERVER set "LLAMA_SERVER=C:\llama-cpp-src\engines\k284-compact-target\llama-server.exe"
+rem Optimized llama.cpp skip-middle4 build qualified at 302.49 tok/s streamed generation on RTX 3090.
+if not defined LLAMA_SERVER set "LLAMA_SERVER=C:\llama-cpp-src\engines\k345-skipmiddle4-final\llama-server.exe"
 if not defined MODEL set "MODEL=C:\llama-cpp-src\Qwen3.6-35B-A3B-MTP-GGUF\Qwen3.6-35B-A3B-UD-Q3_K_M.gguf"
 if not defined HOST set "HOST=0.0.0.0"
 if not defined PORT set "PORT=8080"
@@ -28,7 +28,7 @@ if not defined REASONING_FORMAT set "REASONING_FORMAT=none"
 if not defined SPEC_DRAFT_N_MAX set "SPEC_DRAFT_N_MAX=5"
 if not defined SPEC_DRAFT_N_MIN set "SPEC_DRAFT_N_MIN=0"
 if not defined SPEC_DRAFT_P_MIN set "SPEC_DRAFT_P_MIN=0.0"
-if not defined SPEC_DRAFT_P_SPLIT set "SPEC_DRAFT_P_SPLIT=0.10"
+if not defined SPEC_DRAFT_P_SPLIT set "SPEC_DRAFT_P_SPLIT=0.0"
 if not defined MTP_DRAFT_VOCAB set "MTP_DRAFT_VOCAB=40960"
 if not defined SPEC_ARGS set "SPEC_ARGS="
 
@@ -40,7 +40,8 @@ set "LLAMA_CUDA_GDN_DIRECT_STATE_GATHER=1"
 set "LLAMA_SERVER_DEVICE_CHECKPOINT=1"
 set "LLAMA_QWEN35_MTP_VOCAB=%MTP_DRAFT_VOCAB%"
 set "LLAMA_SPEC_TARGET_FAST_SAMPLE=1"
-set "LLAMA_QWEN35_TARGET_HOTMAP=C:\llama-cpp-src\benchmarks\hardware-optimization-campaign\qwen36-target-hotmap.txt"
+set "LLAMA_QWEN35_TARGET_HOTMAP=C:\llama-cpp-src\benchmarks\hardware-optimization-campaign\qwen36-skipmiddle4-target-hotmap.txt"
+set "LLAMA_QWEN35_SKIP_MIDDLE4=1"
 
 if not "%GPU_CLOCK%"=="0" (
     nvidia-smi -lgc "%GPU_CLOCK%","%GPU_CLOCK%" >nul

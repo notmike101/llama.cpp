@@ -1,0 +1,1 @@
+Return only a JSON object with keys summary, risks, mitigations, and rollout_steps. Analyze a database migration that changes a nullable customer_id column to NOT NULL on a 500 million row orders table while writes continue. Include at least three risks, matched mitigations, and six ordered rollout steps.

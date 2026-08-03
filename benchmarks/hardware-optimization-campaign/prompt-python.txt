@@ -1,0 +1,1 @@
+Write a complete Python 3.12 program that reads newline-delimited JSON from stdin, validates that each object has integer id and string name fields, emits valid objects sorted by id as compact JSON, reports malformed lines to stderr, and exits nonzero if any line is invalid. Include self-tests using io.StringIO. Return only source code.

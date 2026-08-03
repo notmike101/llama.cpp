@@ -2,6 +2,7 @@
 param(
     [string]$Id = 'RW001-promoted-control',
     [string]$Engine = 'C:\llama-cpp-src\engines\b10079-mtp-215tps\llama-server.exe',
+    [string]$Model = '',
     [int]$Port = 18080,
     [int[]]$Seeds = @(101, 202, 303, 404, 505),
     [int]$DraftMax = 4,
@@ -35,7 +36,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $root = 'C:\llama-cpp-src'
 $campaign = Join-Path $root 'benchmarks\hardware-optimization-campaign'
-$model = Join-Path $root 'Qwen3.6-35B-A3B-MTP-GGUF\Qwen3.6-35B-A3B-UD-Q3_K_M.gguf'
+$model = if ($Model) { $Model } else { Join-Path $root 'Qwen3.6-35B-A3B-MTP-GGUF\Qwen3.6-35B-A3B-UD-Q3_K_M.gguf' }
 $output = Join-Path $campaign $Id
 $serverLog = Join-Path $output 'SERVER-LOG.txt'
 $serverOut = Join-Path $output 'SERVER-OUT.txt'

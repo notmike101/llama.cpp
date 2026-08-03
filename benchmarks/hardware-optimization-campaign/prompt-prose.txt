@@ -1,0 +1,1 @@
+Explain how optimistic concurrency control prevents lost updates in a web API. Compare version columns and ETags, include a concrete two-client race, and give practical retry guidance. Write 500-700 words for an experienced software engineer.

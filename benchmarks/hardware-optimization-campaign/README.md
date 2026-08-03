@@ -102,3 +102,18 @@ C++20 `/W4 /WX` compile and runtime checks. Draft acceptance remained
 135,097-token validations passed, with VRAM returning exactly to baseline.
 The launcher enables the device shadow only for its one-slot profile and resets
 the reversible clock locks when the server exits.
+
+## 2026-08-02 depth-five qualification
+
+A fresh run of the promoted depth-four profile measured 204.01 tok/s streamed
+end-to-end. Increasing MTP depth to five and using a 1935 MHz core lock measured
+three five-seed batches at 209.45, 210.64, and 207.23 tok/s. The ordinary median
+of all 15 raw runs was 208.36 tok/s, +6.22 tok/s over the previously qualified
+202.15 tok/s result. A 1950 MHz lock and a 1980 MHz lock did not improve the
+result, and process priority and CPU affinity candidates were rejected.
+
+Every fixed-seed output was byte-identical across the three repeats and passed
+MSVC C++20 `/W4 /WX` compilation and execution. Warm non-streamed, cold
+streamed, 13,597-token warm streamed, and 135,097-token cold non-streamed runs
+also compiled and passed. MTP remained active with 71.0%-78.9% acceptance in
+the validation matrix, and VRAM returned exactly to 490 MiB after every run.

@@ -417,3 +417,25 @@ context. The near-maximum request retained 84.592% draft acceptance. Each
 matrix run returned VRAM exactly to its pre-run level. An exploratory long
 prompt at seed 707 produced the same failing assertion on candidate and
 control, proving it was not introduced by the optimization.
+
+## P129-M146 - depth five and 1935 MHz
+
+P129 confirmed that the promoted device-checkpoint binary retained the same
+kernel mix: Q8_0 J5 and Q6_K J1 accounted for 33.4% of GPU kernel time, with
+fused IQ3_S and IQ4_XS MoE kernels accounting for another 21.3%. A fresh
+depth-four five-seed control measured 204.01 tok/s streamed end-to-end.
+
+Core locks at 1980 MHz, high process priority, physical-core affinity, and
+their combinations did not reach the fresh +5 target. Depth six also
+regressed. Depth five at 1935 MHz produced three complete five-seed medians of
+209.45, 210.64, and 207.23 tok/s. The ordinary median across all 15 raw runs
+was 208.36 tok/s, +6.22 tok/s over the previously promoted 202.15 tok/s
+qualification. Depth five changes the fixed-seed sampled trajectories, so the
+new outputs were independently quality-gated rather than compared bytewise to
+depth four. Each seed was byte-identical across all three depth-five repeats.
+
+All fixed-seed and matrix outputs compiled warning-clean and passed. Warm and
+cold, streamed and non-streamed, 13,597-token, and 135,097-token requests were
+validated. MTP acceptance remained active and every run returned VRAM to its
+490 MiB starting level. The launcher now defaults to depth five and 1935 MHz;
+both remain caller-overridable and the clock lock is reset on exit.

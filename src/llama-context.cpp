@@ -1173,6 +1173,10 @@ void llama_context::set_nextn_layer_offset(int32_t offset) {
     cparams.nextn_layer_offset = offset;
 }
 
+void llama_context::set_optimization_stage(int32_t stage) {
+    cparams.optimization_stage = stage;
+}
+
 void llama_context::set_causal_attn(bool value) {
     LLAMA_LOG_DEBUG("%s: value = %d\n", __func__, value);
 
@@ -3680,6 +3684,10 @@ void llama_set_embeddings(llama_context * ctx, bool embeddings) {
 
 void llama_set_causal_attn(llama_context * ctx, bool causal_attn) {
     ctx->set_causal_attn(causal_attn);
+}
+
+void llama_set_optimization_stage(llama_context * ctx, int32_t stage) {
+    ctx->set_optimization_stage(stage);
 }
 
 void llama_set_warmup(llama_context * ctx, bool warmup) {

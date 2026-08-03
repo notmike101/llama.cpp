@@ -285,12 +285,14 @@ llama_model_qwen35moe::graph::graph(const llama_model & model, const llm_graph_p
     ggml_tensor * inp_out_ids = build_inp_out_ids();
 
     const bool skip_middle4 = std::getenv("LLAMA_QWEN35_SKIP_MIDDLE4") != nullptr;
+    const bool context_skip5 = std::getenv("LLAMA_QWEN35_CONTEXT_SKIP5") != nullptr;
 
     // MTP/NextN layers are loaded as extra decoder blocks but not executed in the main pass.
     for (int il = 0; il < n_layer; ++il) {
         res->t_layer_inp[il] = inpL;
 
-        if (skip_middle4 && il >= 20 && il <= 23) {
+        if ((context_skip5 && il >= 20 && il <= 23 + (cparams.optimization_stage > 0)) ||
+            (skip_middle4 && il >= 20 && il <= 23)) {
             continue;
         }
 

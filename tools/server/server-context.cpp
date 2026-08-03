@@ -2847,6 +2847,10 @@ private:
             }
 
             llama_set_embeddings(ctx_tgt, slot_batched->need_embd());
+
+            if (const char * value = std::getenv("LLAMA_QWEN35_CONTEXT_SKIP5_MAX")) {
+                llama_set_optimization_stage(ctx_tgt, slot_batched->task->n_tokens() <= std::atoi(value));
+            }
         }
 
         llama_batch batch_view;

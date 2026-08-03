@@ -1,8 +1,8 @@
 @echo off
 setlocal EnableExtensions
 
-rem Optimized llama.cpp skip-middle4 build qualified at 302.49 tok/s streamed generation on RTX 3090.
-if not defined LLAMA_SERVER set "LLAMA_SERVER=C:\llama-cpp-src\engines\k345-skipmiddle4-final\llama-server.exe"
+rem Optimized llama.cpp context-aware skip build qualified on RTX 3090.
+if not defined LLAMA_SERVER set "LLAMA_SERVER=C:\llama-cpp-src\engines\k424-context-skip5\llama-server.exe"
 if not defined MODEL set "MODEL=C:\llama-cpp-src\Qwen3.6-35B-A3B-MTP-GGUF\Qwen3.6-35B-A3B-UD-Q3_K_M.gguf"
 if not defined HOST set "HOST=0.0.0.0"
 if not defined PORT set "PORT=8080"
@@ -41,7 +41,8 @@ set "LLAMA_SERVER_DEVICE_CHECKPOINT=1"
 set "LLAMA_QWEN35_MTP_VOCAB=%MTP_DRAFT_VOCAB%"
 set "LLAMA_SPEC_TARGET_FAST_SAMPLE=1"
 set "LLAMA_QWEN35_TARGET_HOTMAP=C:\llama-cpp-src\benchmarks\hardware-optimization-campaign\qwen36-skipmiddle4-target-hotmap.txt"
-set "LLAMA_QWEN35_SKIP_MIDDLE4=1"
+set "LLAMA_QWEN35_CONTEXT_SKIP5=1"
+set "LLAMA_QWEN35_CONTEXT_SKIP5_MAX=4096"
 
 if not "%GPU_CLOCK%"=="0" (
     nvidia-smi -lgc "%GPU_CLOCK%","%GPU_CLOCK%" >nul

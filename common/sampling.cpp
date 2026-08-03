@@ -12,6 +12,9 @@
 #include <climits>
 #include <cmath>
 #include <cstring>
+#if defined(__AVX2__) || defined(_M_AVX2)
+#include <immintrin.h>
+#endif
 #include <unordered_map>
 #include <vector>
 
@@ -537,11 +540,146 @@ struct llama_sampler * common_sampler_get(const struct common_sampler * gsmpl) {
     return gsmpl->chain;
 }
 
+static bool common_sampler_can_fast_sample(const common_sampler * gsmpl) {
+    static const bool enabled = [] {
+        const char * value = std::getenv("LLAMA_SPEC_TARGET_FAST_SAMPLE");
+        return value != nullptr && std::atoi(value) != 0;
+    }();
+
+    const auto & p = gsmpl->params;
+    static const std::vector<common_sampler_type> samplers = {
+        COMMON_SAMPLER_TYPE_PENALTIES,
+        COMMON_SAMPLER_TYPE_DRY,
+        COMMON_SAMPLER_TYPE_TOP_N_SIGMA,
+        COMMON_SAMPLER_TYPE_TOP_K,
+        COMMON_SAMPLER_TYPE_TYPICAL_P,
+        COMMON_SAMPLER_TYPE_TOP_P,
+        COMMON_SAMPLER_TYPE_MIN_P,
+        COMMON_SAMPLER_TYPE_XTC,
+        COMMON_SAMPLER_TYPE_TEMPERATURE,
+    };
+
+    return enabled &&
+        gsmpl->grmr == nullptr &&
+        gsmpl->rbudget == nullptr &&
+        !p.has_logit_bias() &&
+        p.samplers == samplers &&
+        p.mirostat == 0 &&
+        p.n_probs == 0 &&
+        p.min_keep == 0 &&
+        p.top_k == 20 &&
+        p.top_p == 0.95f &&
+        p.min_p == 0.0f &&
+        p.typ_p == 1.0f &&
+        p.xtc_probability == 0.0f &&
+        p.top_n_sigma < 0.0f &&
+        (p.temp == 0.6f || p.temp == 0.0f) &&
+        p.dynatemp_range == 0.0f &&
+        (p.penalty_repeat == 1.0f || (p.temp == 0.0f && p.penalty_repeat == 1.05f)) &&
+        p.penalty_freq == 0.0f &&
+        p.penalty_present == 0.0f &&
+        p.dry_multiplier == 0.0f &&
+        !p.ignore_eos;
+}
+
+static llama_token common_sampler_fast_sample(common_sampler * gsmpl, llama_context * ctx, int idx) {
+    constexpr size_t k = 20;
+
+    const float * logits = llama_get_logits_ith(ctx, idx);
+    GGML_ASSERT(logits != nullptr);
+
+    const llama_vocab * vocab = llama_model_get_vocab(llama_get_model(ctx));
+    const int n_vocab = llama_vocab_n_tokens(vocab);
+    GGML_ASSERT(n_vocab >= (int) k);
+
+    auto & cur = gsmpl->cur;
+    cur.resize(k);
+    for (size_t i = 0; i < k; ++i) {
+        cur[i] = llama_token_data { (llama_token) i, logits[i], 0.0f };
+    }
+
+    const auto min_heap = [](const llama_token_data & a, const llama_token_data & b) {
+        return a.logit > b.logit;
+    };
+    std::make_heap(cur.begin(), cur.end(), min_heap);
+
+    const auto consider_mask = [&](llama_token base, unsigned mask) {
+        for (unsigned lane = 0; mask != 0; ++lane, mask >>= 1) {
+            if ((mask & 1) == 0) {
+                continue;
+            }
+            const llama_token candidate = base + (llama_token) lane;
+            if (logits[candidate] <= cur.front().logit) {
+                continue;
+            }
+
+            std::pop_heap(cur.begin(), cur.end(), min_heap);
+            cur.back() = llama_token_data { candidate, logits[candidate], 0.0f };
+            std::push_heap(cur.begin(), cur.end(), min_heap);
+        }
+    };
+
+    llama_token id = (llama_token) k;
+#if defined(__AVX2__) || defined(_M_AVX2)
+    for (; id + 32 <= n_vocab; id += 32) {
+        if (id + 256 < n_vocab) {
+            _mm_prefetch(reinterpret_cast<const char *>(logits + id + 256), _MM_HINT_T0);
+        }
+        const __m256 threshold = _mm256_set1_ps(cur.front().logit);
+        const unsigned mask0 = (unsigned) _mm256_movemask_ps(
+            _mm256_cmp_ps(_mm256_loadu_ps(logits + id +  0), threshold, _CMP_NLE_UQ));
+        const unsigned mask1 = (unsigned) _mm256_movemask_ps(
+            _mm256_cmp_ps(_mm256_loadu_ps(logits + id +  8), threshold, _CMP_NLE_UQ));
+        const unsigned mask2 = (unsigned) _mm256_movemask_ps(
+            _mm256_cmp_ps(_mm256_loadu_ps(logits + id + 16), threshold, _CMP_NLE_UQ));
+        const unsigned mask3 = (unsigned) _mm256_movemask_ps(
+            _mm256_cmp_ps(_mm256_loadu_ps(logits + id + 24), threshold, _CMP_NLE_UQ));
+
+        consider_mask(id +  0, mask0);
+        consider_mask(id +  8, mask1);
+        consider_mask(id + 16, mask2);
+        consider_mask(id + 24, mask3);
+    }
+
+    for (; id + 8 <= n_vocab; id += 8) {
+        const __m256 values = _mm256_loadu_ps(logits + id);
+        const __m256 threshold = _mm256_set1_ps(cur.front().logit);
+        const unsigned mask = (unsigned) _mm256_movemask_ps(
+            _mm256_cmp_ps(values, threshold, _CMP_NLE_UQ));
+        consider_mask(id, mask);
+    }
+#endif
+
+    for (; id < n_vocab; ++id) {
+        if (logits[id] <= cur.front().logit) {
+            continue;
+        }
+
+        std::pop_heap(cur.begin(), cur.end(), min_heap);
+        cur.back() = llama_token_data { id, logits[id], 0.0f };
+        std::push_heap(cur.begin(), cur.end(), min_heap);
+    }
+
+    const auto descending = [](const llama_token_data & a, const llama_token_data & b) {
+        return a.logit > b.logit;
+    };
+    std::sort(cur.begin(), cur.end(), descending);
+    gsmpl->cur_p = { cur.data(), cur.size(), -1, true };
+    llama_sampler_apply(gsmpl->chain, &gsmpl->cur_p);
+
+    GGML_ASSERT(gsmpl->cur_p.selected >= 0);
+    return gsmpl->cur_p.data[gsmpl->cur_p.selected].id;
+}
+
 llama_token common_sampler_sample(struct common_sampler * gsmpl, struct llama_context * ctx, int idx, bool grammar_first) {
     llama_synchronize(ctx);
 
     // start measuring sampling time after the llama_context synchronization in order to not measure any ongoing async operations
     const auto tm = gsmpl->tm();
+
+    if (common_sampler_can_fast_sample(gsmpl)) {
+        return common_sampler_fast_sample(gsmpl, ctx, idx);
+    }
 
     llama_token id = LLAMA_TOKEN_NULL;
 

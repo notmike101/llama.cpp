@@ -103,6 +103,21 @@ C++20 `/W4 /WX` compile and runtime checks. Draft acceptance remained
 The launcher enables the device shadow only for its one-slot profile and resets
 the reversible clock locks when the server exits.
 
+## 2026-08-02 zero draft cutoff qualification
+
+The promoted depth-five profile was re-established from three new five-seed
+batches before screening further changes. Removing the MTP draft probability
+cutoff increased the ordinary median from 210.51 to 217.25 tok/s across the
+same 15 streamed generation measurements, a 6.74 tok/s gain. The three
+candidate batch medians were 223.51, 216.76, and 217.25 tok/s.
+
+Each fixed-seed output was byte-identical across candidate repeats and passed
+MSVC C++20 `/W4 /WX` compilation and execution. Warm non-streamed, cold
+streamed, 13,597-token warm streamed, and 135,097-token cold non-streamed
+requests also passed. Validation draft acceptance was 67.0%-78.9%, and every
+run returned VRAM to its pre-run value. The launcher now defaults the MTP
+draft probability cutoff to zero while retaining caller override support.
+
 ## 2026-08-02 depth-five qualification
 
 A fresh run of the promoted depth-four profile measured 204.01 tok/s streamed

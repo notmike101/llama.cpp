@@ -439,3 +439,20 @@ cold, streamed and non-streamed, 13,597-token, and 135,097-token requests were
 validated. MTP acceptance remained active and every run returned VRAM to its
 490 MiB starting level. The launcher now defaults to depth five and 1935 MHz;
 both remain caller-overridable and the clock lock is reset on exit.
+
+## M150-V170 - zero MTP draft probability cutoff
+
+Three new depth-five, p-min 0.20 five-seed controls produced a 210.51 tok/s
+ordinary streamed generation median. A monotonic p-min screen improved as the
+cutoff moved from 0.15 to 0.10 to 0.0. Depths six through eight, alternate
+p-split values, enlarged CUDA launch queues, the current-source CUDA backend,
+and shorter recurrent checkpoint tails did not beat the depth-five p-min zero
+candidate. Depth four at p-min zero also regressed to 201.77 tok/s.
+
+Three complete depth-five p-min zero batches measured 223.51, 216.76, and
+217.25 tok/s. Their ordinary 15-run median was 217.25 tok/s, +6.74 tok/s over
+the fresh control and +8.88 tok/s over the prior 208.36 qualification. All
+fixed-seed outputs were byte-identical across repeats and passed warning-clean
+compilation and execution. The warm/cold, streamed/non-streamed, 13,597-token,
+and 135,097-token matrix passed with 67.0%-78.9% draft acceptance and exact
+VRAM return. The launcher now defaults `SPEC_DRAFT_P_MIN` to 0.0.

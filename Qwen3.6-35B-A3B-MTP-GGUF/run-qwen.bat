@@ -12,6 +12,7 @@ if not defined CTX set "CTX=150000"
 if not defined BATCH set "BATCH=2048"
 if not defined UBATCH set "UBATCH=512"
 if not defined THREADS set "THREADS=10"
+if not defined HTTP_THREADS set "HTTP_THREADS=1"
 if not defined PARALLEL set "PARALLEL=1"
 if not defined EXTRA_ARGS set "EXTRA_ARGS="
 if not defined GPU_CLOCK set "GPU_CLOCK=2190"
@@ -39,6 +40,7 @@ if not defined SPEC_ARGS set "SPEC_ARGS="
 
 set "GGML_CUDA_Q8_SOURCE_REUSE=1"
 set "GGML_CUDA_Q8_PERSISTENT_SOURCE_REUSE=1"
+set "GGML_CUDA_GRAPH_OPT=1"
 set "LLAMA_CUDA_SSM_CONV_DIRECT_STATE=1"
 set "LLAMA_CUDA_GDN_PROJECTION_FUSION=1"
 set "LLAMA_CUDA_GDN_DIRECT_STATE_GATHER=1"
@@ -94,6 +96,7 @@ if not "%GPU_MEMORY_CLOCK%"=="0" (
     -ub "%UBATCH%" ^
     -t "%THREADS%" ^
     -tb "%THREADS%" ^
+    --threads-http "%HTTP_THREADS%" ^
     -np "%PARALLEL%" ^
     -fa on ^
     --no-mmap ^

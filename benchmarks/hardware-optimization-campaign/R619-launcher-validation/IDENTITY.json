@@ -1,0 +1,256 @@
+{
+  "timestamp": "2026-08-04T05:35:09.2288097Z",
+  "base_url": "http://127.0.0.1:18080",
+  "health": {
+    "status": "ok"
+  },
+  "aliases": "qwen3.6-35b-a3b@q3_k_m",
+  "expected_alias": "qwen3.6-35b-a3b@q3_k_m",
+  "port_owner": {
+    "pid": 213164,
+    "executable": "C:\\llama-cpp-src\\engines\\k424-context-skip5\\llama-server.exe",
+    "command_line": "\"C:\\llama-cpp-src\\engines\\k424-context-skip5\\llama-server.exe\"      -m \"C:\\llama-cpp-src\\Qwen3.6-35B-A3B-MTP-GGUF\\Qwen3.6-35B-A3B-UD-Q3_K_M.gguf\"     --jinja     --spec-type draft-mtp     --spec-draft-n-max \"5\"     --spec-draft-n-min \"0\"     --spec-draft-p-min \"0.0\"     --spec-draft-p-split \"0.0\"     --backend-sampling     --spec-draft-device CUDA0     --spec-draft-ngl all     --spec-draft-threads \"10\"     --spec-draft-threads-batch \"10\"     --alias \"qwen3.6-35b-a3b@q3_k_m\"     --host \"127.0.0.1\"     --port \"18080\"     -ngl \"all\"     -c \"150000\"     -b \"2048\"     -ub \"512\"     -t \"10\"     -tb \"10\"     --threads-http \"1\"     -np \"1\"     -fa on     --no-mmap     --no-host     -ctk f16     -ctv f16     --reasoning \"off\"     --reasoning-format \"none\"     --temp \"0.6\"     --top-k \"20\"     --top-p \"0.95\"     --min-p \"0.0\"     --poll 0     --spec-draft-poll 0          ",
+    "working_directory": ""
+  },
+  "executable_sha256": "ab4e2a3ee57443a61293865f4440125b08f1d639fd117d0ca1a6b542cc0063aa",
+  "loaded_module_hashes": [
+    {
+      "path": "C:\\llama-cpp-src\\engines\\k424-context-skip5\\ggml-base.dll",
+      "sha256": "8928ec1f3cf9859614fee7bf5c6bca724bb7fdbdd63da387ef5e7b4123064cfa"
+    },
+    {
+      "path": "C:\\llama-cpp-src\\engines\\k424-context-skip5\\ggml-cpu.dll",
+      "sha256": "d6d759c94a3fc478fabfe8d10c89e9de5fc8a7ea5c1a90eff7b6484ee957bcbf"
+    },
+    {
+      "path": "C:\\llama-cpp-src\\engines\\k424-context-skip5\\ggml-cuda.dll",
+      "sha256": "607b21407ffb6577cdd60fd6f1d1d32980971dcb57fc97018893664f6fc36319"
+    },
+    {
+      "path": "C:\\llama-cpp-src\\engines\\k424-context-skip5\\ggml.dll",
+      "sha256": "3669f9b82ee22849cd5dffc3fa0a4e7f776c834e727f016d42174d104b8f2901"
+    },
+    {
+      "path": "C:\\llama-cpp-src\\engines\\k424-context-skip5\\llama-common.dll",
+      "sha256": "6f7fe963bec264f86f8dfd6fec402e3aa34e9d54a15ea2659759028f45dbb608"
+    },
+    {
+      "path": "C:\\llama-cpp-src\\engines\\k424-context-skip5\\llama-server-impl.dll",
+      "sha256": "f1f802bf7839c121cf3ce37db63f9198288e9fc062b54e44796130e1a575bfc1"
+    },
+    {
+      "path": "C:\\llama-cpp-src\\engines\\k424-context-skip5\\llama-server.exe",
+      "sha256": "ab4e2a3ee57443a61293865f4440125b08f1d639fd117d0ca1a6b542cc0063aa"
+    },
+    {
+      "path": "C:\\llama-cpp-src\\engines\\k424-context-skip5\\llama.dll",
+      "sha256": "16e8b4a9c12adbcf6cc3e8d70f8ea7452da93c634cb0b9a59759788e9a2cd4ef"
+    },
+    {
+      "path": "C:\\llama-cpp-src\\engines\\k424-context-skip5\\mtmd.dll",
+      "sha256": "364ff9771bd410ac5382b5385de3caaa485a5e236843ee2c889eb2c5b5345b93"
+    },
+    {
+      "path": "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v13.3\\bin\\x64\\cublas64_13.dll",
+      "sha256": "8c6bac24474af29627ec96500025a5d410a1b7e8ffa00e1fe13b1781fc6b3ddc"
+    },
+    {
+      "path": "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v13.3\\bin\\x64\\cublasLt64_13.dll",
+      "sha256": "e323abd89e0f03c1db91a09d7aeb1928de08e1f86192cc713b335fefe3e368a9"
+    },
+    {
+      "path": "C:\\WINDOWS\\System32\\ADVAPI32.dll",
+      "sha256": "45635a7b1aaba8baf89d96dad4ba1bbb8998a8d11b707db3a10fcc12a514fc6a"
+    },
+    {
+      "path": "C:\\WINDOWS\\System32\\bcryptPrimitives.dll",
+      "sha256": "fcc584b2e1edee035ca62a1ad7269269d94bafd1e3a60a73b95f25cc59bcfdea"
+    },
+    {
+      "path": "C:\\WINDOWS\\SYSTEM32\\cfgmgr32.dll",
+      "sha256": "3ee15d23144ad80b3b6cb2a274c2a44f4d0f7ad0f0dbb64ce55423e649906acd"
+    },
+    {
+      "path": "C:\\WINDOWS\\System32\\combase.dll",
+      "sha256": "7774e2c4b7163f4bd869327941f8072a03ced8ac2aa9a5121740a26600ee02eb"
+    },
+    {
+      "path": "C:\\WINDOWS\\System32\\CRYPT32.dll",
+      "sha256": "d81a4b104c25029f0dafe0f601a6c209591e58494824e28a4df2da99c1bb2068"
+    },
+    {
+      "path": "C:\\WINDOWS\\SYSTEM32\\cryptbase.dll",
+      "sha256": "a3d2cc015de11fc08beb54a08827fee2f63fd8cec9c58273a9120e37fb111c9d"
+    },
+    {
+      "path": "C:\\WINDOWS\\SYSTEM32\\cryptnet.dll",
+      "sha256": "3be88a52f3fc4d83e0e4722a8174b77d1b0f3c8acdc05dbfdd7b3df673bb0577"
+    },
+    {
+      "path": "C:\\WINDOWS\\SYSTEM32\\devobj.dll",
+      "sha256": "ec5449b603ed8b0aca43ef210fc27424eb1aeaf6d2400d0a9b1dfcafb62497db"
+    },
+    {
+      "path": "C:\\WINDOWS\\system32\\DriverStore\\FileRepository\\nvddsi.inf_amd64_c3c424ec990be272\\nvapi64_impl.dll",
+      "sha256": "c129247c3f70bfca49d3f16b28a02d5ee115e541b9f375f154f481a45b35f087"
+    },
+    {
+      "path": "C:\\WINDOWS\\system32\\DriverStore\\FileRepository\\nvddsi.inf_amd64_c3c424ec990be272\\nvcuda64.dll",
+      "sha256": "e1d087599664873ee77c56bcb0f58689737d5ba9d3feed1fcd9d77aa280db7cc"
+    },
+    {
+      "path": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nvddsi.inf_amd64_c3c424ec990be272\\nvcudart_hybrid64.dll",
+      "sha256": "6ce75bb3259781e6a1c1f9a9d23c72f3215f85676b46827e1046602302724c8a"
+    },
+    {
+      "path": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nvddsi.inf_amd64_c3c424ec990be272\\nvdxgdmal64.dll",
+      "sha256": "aeea824dbe727d63c9765a3f061314dae29899bc1df68594fcf08cc2d5016f4d"
+    },
+    {
+      "path": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nvddsi.inf_amd64_c3c424ec990be272\\nvobjectloader64.dll",
+      "sha256": "31c3323108222ccce9e45a41d5c20a44832706d30cd89d85f316544925dcb23a"
+    },
+    {
+      "path": "C:\\WINDOWS\\SYSTEM32\\drvstore.dll",
+      "sha256": "941afaccc0c44fe9944500d3985120db08bc246faec56061d1b9a171498425b3"
+    },
+    {
+      "path": "C:\\WINDOWS\\SYSTEM32\\dxcore.dll",
+      "sha256": "121dfe375c0f3ef3c0ffc5acc718ede9b7bf62fe485b20a1e01652bcf3a84061"
+    },
+    {
+      "path": "C:\\WINDOWS\\System32\\GDI32.dll",
+      "sha256": "772c73e294a4c5f5e0d4146288af95287a85c074d3aee3fa9f320dc010d7dbfe"
+    },
+    {
+      "path": "C:\\WINDOWS\\System32\\gdi32full.dll",
+      "sha256": "6e7d2b41054202648d161684b7d4b76731a25e72b4c06e805a79a3f8a960be74"
+    },
+    {
+      "path": "C:\\WINDOWS\\System32\\IMM32.DLL",
+      "sha256": "700fad44c3c8bd4ccd68b47464234197b378d1aeb95a249e036adfbe8e45eef0"
+    },
+    {
+      "path": "C:\\WINDOWS\\SYSTEM32\\kernel.appcore.dll",
+      "sha256": "7d3f071a0f38a29445656f35d7e251eab7cb37d6c6ec0db314384c4aafb8787f"
+    },
+    {
+      "path": "C:\\WINDOWS\\System32\\KERNEL32.DLL",
+      "sha256": "26410f4948e0ed66936880596e2b5a59efce481a7c97086049b385f00325c341"
+    },
+    {
+      "path": "C:\\WINDOWS\\System32\\KERNELBASE.dll",
+      "sha256": "8e8499fc4750ebc487a30cd07dc7db635ba6dbe9b66f83ec695a5af70b71c07c"
+    },
+    {
+      "path": "C:\\WINDOWS\\SYSTEM32\\msasn1.dll",
+      "sha256": "aa5e878caf3d462e8776803cfd078924d36131267e1d081b0c29d092bd600e67"
+    },
+    {
+      "path": "C:\\WINDOWS\\System32\\msvcp_win.dll",
+      "sha256": "940a41d9d78c2d2d0ece8d8e4735630735f57ffb95466e350dae3535b40a698a"
+    },
+    {
+      "path": "C:\\WINDOWS\\SYSTEM32\\MSVCP140.dll",
+      "sha256": "0f885b509a685d2bbfa652fed26b5fb31d88fbdab0a978c641d1c7b8aa460aa9"
+    },
+    {
+      "path": "C:\\WINDOWS\\System32\\msvcrt.dll",
+      "sha256": "744606e3d245647943ab7be0d4132ead491c719b908c207afb775e1ed30299f0"
+    },
+    {
+      "path": "C:\\WINDOWS\\system32\\mswsock.dll",
+      "sha256": "afc5e4ee1b6603e7be493c81f58f057fd42241cf1b27f0118e33c2742245d5d9"
+    },
+    {
+      "path": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+      "sha256": "b8f3a6aaf71ddf1a0ffd43cfa058b4ea55296332ea0c1f98b69ca785b3220087"
+    },
+    {
+      "path": "C:\\WINDOWS\\SYSTEM32\\nvapi64.dll",
+      "sha256": "97f9cdf75afa7431128a4b126fe8d6f36824c03e8ccfa09ac6ae687e0444b8a9"
+    },
+    {
+      "path": "C:\\WINDOWS\\SYSTEM32\\nvcuda.dll",
+      "sha256": "611aa1279af88abc471a7202909b6708618ba6962909e01ea7515c4cfec2f8ee"
+    },
+    {
+      "path": "C:\\WINDOWS\\System32\\ole32.dll",
+      "sha256": "b88e504d039029f883846ef4c6d473b195e907b03a6121c9dffa126d8feb4db5"
+    },
+    {
+      "path": "C:\\WINDOWS\\System32\\OLEAUT32.dll",
+      "sha256": "18953c474da7587cc4db63ae51a9f6a5573de4f0a8db5066e384b4fd246f5d60"
+    },
+    {
+      "path": "C:\\WINDOWS\\System32\\RPCRT4.dll",
+      "sha256": "1e216ced513116c95b6632dcd928041184ae2ce3d41765eb800b5f208f4c543b"
+    },
+    {
+      "path": "C:\\WINDOWS\\System32\\sechost.dll",
+      "sha256": "33f13aacd32c507006caa51eabcf2cb416b88353e6a118d1fc358e952795153e"
+    },
+    {
+      "path": "C:\\WINDOWS\\System32\\SETUPAPI.dll",
+      "sha256": "a70a1afea363bc77ffdb3c030ab520266865ca56113a7c606d3c22dcf7b7efa8"
+    },
+    {
+      "path": "C:\\WINDOWS\\System32\\shcore.dll",
+      "sha256": "6177cb978d5e4b835b69007ff03dddc26d8c4033e349998c32568fd16943c5ea"
+    },
+    {
+      "path": "C:\\WINDOWS\\System32\\SHELL32.dll",
+      "sha256": "54be3efc4dfdb3f42012722e6894bbb8ad3b8d45d3f33846733af27fdd100cd8"
+    },
+    {
+      "path": "C:\\WINDOWS\\System32\\SHLWAPI.dll",
+      "sha256": "76f2e02109da0110b4e2927e24fe43a52bfa12440a57e230d46fe91054e75c86"
+    },
+    {
+      "path": "C:\\WINDOWS\\System32\\ucrtbase.dll",
+      "sha256": "5e7709a6b71bb818260b6f05c5bb3b6ca0c3ca9bc2f58c6242c1cd9d826d0079"
+    },
+    {
+      "path": "C:\\WINDOWS\\System32\\USER32.dll",
+      "sha256": "6fcd82185566db70ca0a7bc5cf08fbe448d407928990fd58eec32c06b240b1bc"
+    },
+    {
+      "path": "C:\\WINDOWS\\SYSTEM32\\VCOMP140.DLL",
+      "sha256": "55aba23cdcd6484fbb06f4155b8ca75adfce7a881f10afd0c49457165e677164"
+    },
+    {
+      "path": "C:\\WINDOWS\\SYSTEM32\\VCRUNTIME140_1.dll",
+      "sha256": "1f2d41c4aa5db0bc33ebf7b66d72943a817d7ce6cbe880502a9403823633093f"
+    },
+    {
+      "path": "C:\\WINDOWS\\SYSTEM32\\VCRUNTIME140.dll",
+      "sha256": "d5e4d9a3e835fa679450145d6a7d94e36573a509317111904d9b3712c30d9066"
+    },
+    {
+      "path": "C:\\WINDOWS\\SYSTEM32\\VERSION.dll",
+      "sha256": "cea99f212af557a9613150c5509631403ed0f05f5d9a06ac42039bd59b40e39a"
+    },
+    {
+      "path": "C:\\WINDOWS\\System32\\win32u.dll",
+      "sha256": "8c623a46434e33d2b5aa7cbaff9fb2bf30b51de4f57c4717334f07ca9342a361"
+    },
+    {
+      "path": "C:\\WINDOWS\\SYSTEM32\\windows.storage.dll",
+      "sha256": "731a15836833f4782f475fcc432845fd5a4930462827d7ba156bdd0848ae2af1"
+    },
+    {
+      "path": "C:\\WINDOWS\\SYSTEM32\\wldp.dll",
+      "sha256": "4e0d60a1b4a43caea3346387e4081324a60231b6edd672247274190900024b1b"
+    },
+    {
+      "path": "C:\\WINDOWS\\System32\\WS2_32.dll",
+      "sha256": "89f6ce4b21c5d78488b5ace0b7aad937ab7da12c0928ad9b2ecdf59ca9ad6b95"
+    }
+  ],
+  "loaded_module_hash_error": null,
+  "expected_executable": "C:\\llama-cpp-src\\engines\\k424-context-skip5\\llama-server.exe",
+  "expected_model_path": "C:\\llama-cpp-src\\Qwen3.6-35B-A3B-MTP-GGUF\\Qwen3.6-35B-A3B-UD-Q3_K_M.gguf",
+  "expected_binary_sha256": "AB4E2A3EE57443A61293865F4440125B08F1D639FD117D0CA1A6B542CC0063AA",
+  "verified": true,
+  "verification_reasons": []
+}

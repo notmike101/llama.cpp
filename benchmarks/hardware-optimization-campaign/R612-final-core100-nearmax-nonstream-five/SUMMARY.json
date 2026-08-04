@@ -1,0 +1,78 @@
+{
+  "mode": "nonstream",
+  "warmup": true,
+  "prompt_file": "",
+  "context_repeat": 5000,
+  "max_tokens": 512,
+  "spec_type": "draft-mtp",
+  "batch": 2048,
+  "ubatch": 512,
+  "seeds": [
+    101,
+    202,
+    303,
+    404,
+    505
+  ],
+  "stream_total_tps_median": 167.77761441121802,
+  "stream_generation_only_tps_median": 201.80671010153435,
+  "server_decode_tps_median": 201.80671010153435,
+  "ttft_ms_median": 83.358,
+  "raw_results": [
+    {
+      "seed": 101,
+      "output_tokens": 311.0,
+      "server_decode_tps": 213.1585296310918,
+      "stream_total_tps": 171.29758582215598,
+      "stream_generation_only_tps": 213.1585296310918,
+      "ttft_ms": 82.8,
+      "wall_ms": 1815.5539,
+      "prompt_tokens": 4.0,
+      "prompt_ms": 82.8
+    },
+    {
+      "seed": 202,
+      "output_tokens": 427.0,
+      "server_decode_tps": 184.8820997757168,
+      "stream_total_tps": 160.95514628636522,
+      "stream_generation_only_tps": 184.8820997757168,
+      "ttft_ms": 82.793,
+      "wall_ms": 2652.913,
+      "prompt_tokens": 4.0,
+      "prompt_ms": 82.793
+    },
+    {
+      "seed": 303,
+      "output_tokens": 350.0,
+      "server_decode_tps": 214.4781318096807,
+      "stream_total_tps": 176.06511471472245,
+      "stream_generation_only_tps": 214.4781318096807,
+      "ttft_ms": 83.359,
+      "wall_ms": 1987.9009,
+      "prompt_tokens": 4.0,
+      "prompt_ms": 83.359
+    },
+    {
+      "seed": 404,
+      "output_tokens": 355.0,
+      "server_decode_tps": 201.80671010153435,
+      "stream_total_tps": 167.77761441121802,
+      "stream_generation_only_tps": 201.80671010153435,
+      "ttft_ms": 89.656,
+      "wall_ms": 2115.8961,
+      "prompt_tokens": 4.0,
+      "prompt_ms": 89.656
+    },
+    {
+      "seed": 505,
+      "output_tokens": 485.0,
+      "server_decode_tps": 184.04158353173145,
+      "stream_total_tps": 162.29973843640298,
+      "stream_generation_only_tps": 184.04158353173145,
+      "ttft_ms": 83.358,
+      "wall_ms": 2988.2981,
+      "prompt_tokens": 4.0,
+      "prompt_ms": 83.358
+    }
+  ]
+}

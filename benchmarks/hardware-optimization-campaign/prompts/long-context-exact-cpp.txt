@@ -1,0 +1,3 @@
+Return exactly this C++20 source and nothing else:
+#include <iostream>
+int main() { std::cout << "All tests passed.\n"; }

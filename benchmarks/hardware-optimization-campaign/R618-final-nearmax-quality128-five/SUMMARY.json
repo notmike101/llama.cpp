@@ -1,0 +1,78 @@
+{
+  "mode": "nonstream",
+  "warmup": true,
+  "prompt_file": "C:\\llama-cpp-src\\benchmarks\\hardware-optimization-campaign\\prompts\\long-context-exact-cpp.txt",
+  "context_repeat": 5000,
+  "max_tokens": 128,
+  "spec_type": "draft-mtp",
+  "batch": 2048,
+  "ubatch": 512,
+  "seeds": [
+    101,
+    202,
+    303,
+    404,
+    505
+  ],
+  "stream_total_tps_median": 47.13852039898044,
+  "stream_generation_only_tps_median": 212.3203721397068,
+  "server_decode_tps_median": 212.3203721397068,
+  "ttft_ms_median": 89.863,
+  "raw_results": [
+    {
+      "seed": 101,
+      "output_tokens": 22.0,
+      "server_decode_tps": 223.6636099306643,
+      "stream_total_tps": 42.9394890864409,
+      "stream_generation_only_tps": 223.6636099306643,
+      "ttft_ms": 83.737,
+      "wall_ms": 512.3489,
+      "prompt_tokens": 4.0,
+      "prompt_ms": 83.737
+    },
+    {
+      "seed": 202,
+      "output_tokens": 22.0,
+      "server_decode_tps": 209.5058518793627,
+      "stream_total_tps": 47.13852039898044,
+      "stream_generation_only_tps": 209.5058518793627,
+      "ttft_ms": 98.26,
+      "wall_ms": 466.7096,
+      "prompt_tokens": 4.0,
+      "prompt_ms": 98.26
+    },
+    {
+      "seed": 303,
+      "output_tokens": 22.0,
+      "server_decode_tps": 173.55769610047412,
+      "stream_total_tps": 43.76425073414531,
+      "stream_generation_only_tps": 173.55769610047412,
+      "ttft_ms": 109.623,
+      "wall_ms": 502.6934,
+      "prompt_tokens": 4.0,
+      "prompt_ms": 109.623
+    },
+    {
+      "seed": 404,
+      "output_tokens": 22.0,
+      "server_decode_tps": 222.676572400251,
+      "stream_total_tps": 47.43177424372731,
+      "stream_generation_only_tps": 222.676572400251,
+      "ttft_ms": 88.996,
+      "wall_ms": 463.8241,
+      "prompt_tokens": 4.0,
+      "prompt_ms": 88.996
+    },
+    {
+      "seed": 505,
+      "output_tokens": 22.0,
+      "server_decode_tps": 212.3203721397068,
+      "stream_total_tps": 48.372698448995386,
+      "stream_generation_only_tps": 212.3203721397068,
+      "ttft_ms": 89.863,
+      "wall_ms": 454.802,
+      "prompt_tokens": 4.0,
+      "prompt_ms": 89.863
+    }
+  ]
+}

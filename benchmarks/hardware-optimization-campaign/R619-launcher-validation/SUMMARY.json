@@ -1,0 +1,32 @@
+{
+  "metric_definitions": {
+    "server_decode_tps": "server-reported generated tokens / server decode interval",
+    "request_e2e_tps": "completion tokens / client request-start to response-complete wall time",
+    "stream_total_tps": "completion tokens / client request-start to final-token wall time"
+  },
+  "seed_count": 1,
+  "seeds": [
+    101
+  ],
+  "server_decode_tps_median": 0.0,
+  "request_e2e_tps_median": 205.53812852716675,
+  "stream_total_tps_median": 205.53812852716675,
+  "raw_results": [
+    {
+      "seed": 101,
+      "stream": true,
+      "status": 200,
+      "prompt_tokens": null,
+      "cache_tokens": null,
+      "output_tokens": 512.0,
+      "server_decode_tps": null,
+      "request_e2e_tps": 205.53812852716675,
+      "stream_total_tps": 205.53812852716675,
+      "stream_generation_only_tps": 226.25642135167706,
+      "ttft_ms": 226.0265,
+      "wall_ms": 2491.022,
+      "raw_path": "C:\\llama-cpp-src\\benchmarks\\hardware-optimization-campaign\\R619-launcher-validation\\seed-101-stream.raw",
+      "identity_path": "C:\\llama-cpp-src\\benchmarks\\hardware-optimization-campaign\\R619-launcher-validation\\IDENTITY.json"
+    }
+  ]
+}

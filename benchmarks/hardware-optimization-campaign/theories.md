@@ -666,3 +666,24 @@ The historical Q8 J6 xcache cubin changed eight address increments. A hybrid
 retained the K1097 opcodes and transplanted only 64 donor scheduling words;
 its disassembled instruction stream matched the control, but it regressed to
 258.995 tok/s. The verified engine and launcher remain unchanged.
+
+## K1146-K1158 - IQ4_XS, GDN, and copy-kernel follow-up
+
+IQ4_XS 64-byte, 128-byte, and 256-byte weight prefetch variants did not beat
+the matched K1097 control. A 64-byte activation prefetch variant also
+regressed. The existing GDN exponential broadcast wrapper was positive in one
+forward pair and negative in the reverse pair; its ten-run aggregate was
+slightly slower than control and was rejected.
+
+The retained K717 copy channel-pair kernel was then isolated as the only CUDA
+wrapper change. It preserved output lengths but measured 218.337 tok/s against
+225.232 tok/s for the immediately matched untouched K1097 control. The wrapper
+is rejected. The packer now accepts optional Q4, Q5, and Q6 payloads so future
+single-wrapper experiments do not silently replace unrelated kernels.
+
+The absolute control rate fell far below the earlier 280-285 tok/s range while
+the Windows session was active through RDP. Historical console/RDP comparisons
+on this machine show the same directional penalty. Console-session
+qualification is required before treating further absolute 285 tok/s attempts
+as authoritative; transferring the live session would disconnect RDP and is
+not performed without user approval.

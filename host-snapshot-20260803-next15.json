@@ -1,0 +1,182 @@
+{
+  "timestamp": "2026-08-04T03:14:00.2544063Z",
+  "computer": {
+    "Name": "DESKTOP-LBIO77Q",
+    "Manufacturer": "Alienware",
+    "Model": "Alienware Aurora R11",
+    "TotalPhysicalMemory": 137229893632
+  },
+  "os": {
+    "Caption": "Microsoft Windows 11 Pro",
+    "Version": "10.0.26200",
+    "BuildNumber": "26200",
+    "OSArchitecture": "64-bit"
+  },
+  "processors": [
+    {
+      "Name": "Intel(R) Core(TM) i9-10900KF CPU @ 3.70GHz",
+      "NumberOfCores": 10,
+      "NumberOfLogicalProcessors": 20,
+      "MaxClockSpeed": 3696
+    }
+  ],
+  "display_adapters": [
+    {
+      "Name": "Microsoft Remote Display Adapter",
+      "DriverVersion": "10.0.26100.8737",
+      "AdapterRAM": null,
+      "PNPDeviceID": "SWD\\REMOTEDISPLAYENUM\\RDPIDD_INDIRECTDISPLAY&SESSIONID_0002"
+    },
+    {
+      "Name": "NVIDIA GeForce RTX 3090",
+      "DriverVersion": "32.0.16.1062",
+      "AdapterRAM": 4293918720,
+      "PNPDeviceID": "PCI\\VEN_10DE&DEV_2204&SUBSYS_38801028&REV_A1\\4&2954D89E&0&0008"
+    }
+  ],
+  "host_memory": {
+    "TotalVisibleMemorySize": 134013568,
+    "FreePhysicalMemory": 117213592,
+    "TotalVirtualMemorySize": 142402176,
+    "FreeVirtualMemory": 125184916
+  },
+  "nvidia_smi": "0, NVIDIA GeForce RTX 3090, 610.62, 24576, 409, P0, 119.28",
+  "nvcc": "nvcc: NVIDIA (R) Cuda compiler driver\r\nCopyright (c) 2005-2026 NVIDIA Corporation\r\nBuilt on Tue_Jun__9_14:30:19_Pacific_Daylight_Time_2026\r\nCuda compilation tools, release 13.3, V13.3.73\r\nBuild cuda_13.3.r13.3/compiler.38244171_0",
+  "rocminfo": null,
+  "inference_processes": [
+    {
+      "ProcessId": 240696,
+      "Name": "pwsh.exe",
+      "ExecutablePath": "C:\\Program Files\\WindowsApps\\Microsoft.PowerShell_7.6.4.0_x64__8wekyb3d8bbwe\\pwsh.exe",
+      "CommandLine": "\"C:\\Program Files\\WindowsApps\\Microsoft.PowerShell_7.6.4.0_x64__8wekyb3d8bbwe\\pwsh.exe\" -Command \"try { [Console]::OutputEncoding=[System.Text.Encoding]::UTF8 } catch {}\n$snap='C:\\llama-cpp-src\\host-snapshot-20260803-next15.json'; & 'C:\\Users\\me\\.codex\\skills\\optimize-llama-hardware\\scripts\\snapshot_host.ps1' -OutputPath $snap | Out-Null; nvidia-smi -lgc 2145,2145; if ($LASTEXITCODE -ne 0) { throw 'core lock failed' }; nvidia-smi -lmc 9751,9751; if ($LASTEXITCODE -ne 0) { throw 'memory lock failed' }; $env:LLAMA_SPEC_TARGET_FAST_SAMPLE='1'; $env:LLAMA_QWEN35_TARGET_HOTMAP='C:\\llama-cpp-src\\benchmarks\\hardware-optimization-campaign\\qwen36-skipmiddle4-target-hotmap.txt'; $env:LLAMA_QWEN35_CONTEXT_SKIP5='1'; $env:LLAMA_QWEN35_CONTEXT_SKIP5_MAX='4096'; $runner='C:\\llama-cpp-src\\benchmarks\\hardware-optimization-campaign\\run-realworld.ps1'; $engine='C:\\llama-cpp-src\\engines\\k424-context-skip5\\llama-server.exe'; foreach ($id in @('K557-core2145-fresh-control-a','K558-core2145-fresh-control-b','K559-core2145-fresh-control-c')) { & $runner -Id $id -Engine $engine -DraftMax 5 -DraftPMin 0 -DraftPSplit 0 -Poll 0 -DraftPoll 0 -NoHost -DeviceCheckpoint 1 -MtpVocab 40960 };\""
+    }
+  ],
+  "profiler_processes": [],
+  "listening_ports": [
+    {
+      "LocalAddress": "0.0.0.0",
+      "LocalPort": 135,
+      "OwningProcess": 1940
+    },
+    {
+      "LocalAddress": "::",
+      "LocalPort": 135,
+      "OwningProcess": 1940
+    },
+    {
+      "LocalAddress": "192.168.2.111",
+      "LocalPort": 139,
+      "OwningProcess": 4
+    },
+    {
+      "LocalAddress": "::",
+      "LocalPort": 445,
+      "OwningProcess": 4
+    },
+    {
+      "LocalAddress": "::",
+      "LocalPort": 2869,
+      "OwningProcess": 4
+    },
+    {
+      "LocalAddress": "0.0.0.0",
+      "LocalPort": 3389,
+      "OwningProcess": 7300
+    },
+    {
+      "LocalAddress": "::",
+      "LocalPort": 3389,
+      "OwningProcess": 7300
+    },
+    {
+      "LocalAddress": "0.0.0.0",
+      "LocalPort": 5040,
+      "OwningProcess": 12588
+    },
+    {
+      "LocalAddress": "::",
+      "LocalPort": 5357,
+      "OwningProcess": 4
+    },
+    {
+      "LocalAddress": "::1",
+      "LocalPort": 42050,
+      "OwningProcess": 10068
+    },
+    {
+      "LocalAddress": "::",
+      "LocalPort": 49664,
+      "OwningProcess": 1680
+    },
+    {
+      "LocalAddress": "0.0.0.0",
+      "LocalPort": 49664,
+      "OwningProcess": 1680
+    },
+    {
+      "LocalAddress": "::",
+      "LocalPort": 49665,
+      "OwningProcess": 1504
+    },
+    {
+      "LocalAddress": "0.0.0.0",
+      "LocalPort": 49665,
+      "OwningProcess": 1504
+    },
+    {
+      "LocalAddress": "::",
+      "LocalPort": 49666,
+      "OwningProcess": 2460
+    },
+    {
+      "LocalAddress": "0.0.0.0",
+      "LocalPort": 49666,
+      "OwningProcess": 2460
+    },
+    {
+      "LocalAddress": "0.0.0.0",
+      "LocalPort": 49667,
+      "OwningProcess": 2660
+    },
+    {
+      "LocalAddress": "::",
+      "LocalPort": 49667,
+      "OwningProcess": 2660
+    },
+    {
+      "LocalAddress": "::",
+      "LocalPort": 49668,
+      "OwningProcess": 4140
+    },
+    {
+      "LocalAddress": "0.0.0.0",
+      "LocalPort": 49668,
+      "OwningProcess": 4140
+    },
+    {
+      "LocalAddress": "::1",
+      "LocalPort": 49669,
+      "OwningProcess": 4804
+    },
+    {
+      "LocalAddress": "0.0.0.0",
+      "LocalPort": 49672,
+      "OwningProcess": 1632
+    },
+    {
+      "LocalAddress": "::",
+      "LocalPort": 49672,
+      "OwningProcess": 1632
+    },
+    {
+      "LocalAddress": "0.0.0.0",
+      "LocalPort": 49673,
+      "OwningProcess": 8112
+    },
+    {
+      "LocalAddress": "::",
+      "LocalPort": 49673,
+      "OwningProcess": 8112
+    }
+  ]
+}

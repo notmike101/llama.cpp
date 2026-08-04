@@ -14,8 +14,13 @@ if not defined UBATCH set "UBATCH=512"
 if not defined THREADS set "THREADS=10"
 if not defined PARALLEL set "PARALLEL=1"
 if not defined EXTRA_ARGS set "EXTRA_ARGS="
-if not defined GPU_CLOCK set "GPU_CLOCK=2145"
+if not defined GPU_CLOCK set "GPU_CLOCK=2190"
 if not defined GPU_MEMORY_CLOCK set "GPU_MEMORY_CLOCK=9751"
+if not defined ENABLE_HARDWARE_TUNING set "ENABLE_HARDWARE_TUNING=1"
+if not defined GPU_FAN set "GPU_FAN=100"
+if not defined GPU_CORE_OFFSET set "GPU_CORE_OFFSET=100000"
+if not defined MSI_AFTERBURNER set "MSI_AFTERBURNER=C:\Program Files (x86)\MSI Afterburner\MSIAfterburner.exe"
+if not defined MACM_CONTROL set "MACM_CONTROL=%~dp0macm-control.exe"
 
 rem Sampling defaults applied to every request unless the caller overrides.
 rem Use LLAMA_TEMP because TEMP is a standard Windows directory variable.
@@ -43,6 +48,20 @@ set "LLAMA_SPEC_TARGET_FAST_SAMPLE=1"
 set "LLAMA_QWEN35_TARGET_HOTMAP=C:\llama-cpp-src\benchmarks\hardware-optimization-campaign\qwen36-skipmiddle4-target-hotmap.txt"
 set "LLAMA_QWEN35_CONTEXT_SKIP5=1"
 set "LLAMA_QWEN35_CONTEXT_SKIP5_MAX=4096"
+
+set "AB_STARTED=0"
+set "HARDWARE_TUNED=0"
+if "%ENABLE_HARDWARE_TUNING%"=="1" (
+    tasklist /FI "IMAGENAME eq MSIAfterburner.exe" 2>nul | find /I "MSIAfterburner.exe" >nul
+    if errorlevel 1 (
+        start "" /min "%MSI_AFTERBURNER%"
+        timeout /t 2 /nobreak >nul
+        set "AB_STARTED=1"
+    )
+    "%MACM_CONTROL%" "%GPU_FAN%" 0 "%GPU_CORE_OFFSET%" 0 >nul
+    if errorlevel 1 goto hardware_error
+    set "HARDWARE_TUNED=1"
+)
 
 if not "%GPU_CLOCK%"=="0" (
     nvidia-smi -lgc "%GPU_CLOCK%","%GPU_CLOCK%" >nul
@@ -97,8 +116,14 @@ goto clock_cleanup
 
 :clock_error
 set "SERVER_EXIT=%ERRORLEVEL%"
+goto clock_cleanup
+
+:hardware_error
+set "SERVER_EXIT=%ERRORLEVEL%"
 
 :clock_cleanup
 if not "%GPU_CLOCK%"=="0" nvidia-smi -rgc >nul
 if not "%GPU_MEMORY_CLOCK%"=="0" nvidia-smi -rmc >nul
+if "%HARDWARE_TUNED%"=="1" "%MACM_CONTROL%" 0 1 0 0 >nul
+if "%AB_STARTED%"=="1" taskkill /IM MSIAfterburner.exe /T /F >nul 2>&1
 exit /b %SERVER_EXIT%

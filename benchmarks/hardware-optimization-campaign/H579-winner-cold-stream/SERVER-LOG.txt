@@ -1,0 +1,21 @@
+0.00.035.256 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
+0.00.085.564 I srv          init: The UI is disabled
+0.00.085.570 I srv          init: Use --ui/--no-ui (or deprecated --webui/--no-webui) to enable/disable
+0.00.085.703 W srv  llama_server: -----------------
+0.00.085.704 W srv  llama_server: CORS is set to allow all origins ('*') and no API key is set
+0.00.085.704 W srv  llama_server: this can be a security risk (cross-origin attacks)
+0.00.085.704 W srv  llama_server: more info: https://github.com/ggml-org/llama.cpp/pull/25655
+0.00.085.704 W srv  llama_server: -----------------
+0.00.090.315 I srv    load_model: loading model 'C:\llama-cpp-src\Qwen3.6-35B-A3B-MTP-GGUF\Qwen3.6-35B-A3B-UD-Q3_K_M.gguf'
+0.06.081.225 I srv    load_model: initializing, n_slots = 1, n_ctx_slot = 150016, kv_unified = 'false'
+0.06.206.237 I srv          init: chat template supports preserving reasoning, consider enabling it via --reasoning-preserve
+0.06.206.257 I srv  llama_server: model loaded
+0.06.206.258 I srv  llama_server: listening on http://127.0.0.1:18080
+0.52.769.077 I slot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = -1
+0.52.769.131 I slot launch_slot_: id  0 | task 0 | processing task, is_child = 0
+0.54.102.709 I slot print_timing: id  0 | task 0 | prompt eval time =     248.38 ms /    94 tokens (    2.64 ms per token,   378.45 tokens per second)
+0.54.102.716 I slot print_timing: id  0 | task 0 |        eval time =    1084.83 ms /   343 tokens (    3.16 ms per token,   316.18 tokens per second)
+0.54.102.717 I slot print_timing: id  0 | task 0 |       total time =    1333.21 ms /   437 tokens
+0.54.102.718 I slot print_timing: id  0 | task 0 |    graphs reused =         71
+0.54.102.726 I slot print_timing: id  0 | task 0 | draft acceptance = 0.75000 (  270 accepted /   360 generated), mean len =  4.75
+0.54.102.780 I slot      release: id  0 | task 0 | stop processing: n_tokens = 436, truncated = 0

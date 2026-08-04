@@ -614,3 +614,21 @@ the three-seed screen. It was reverted. No-host, zero polling, high priority,
 skip-chat-parsing, and an exact five-seed repeat also failed to improve the
 quality-safe result. The 284.184 tok/s observation remains the safe ceiling,
 not a qualified 285 tok/s result.
+
+## K1087-K1101 - exact K514 PTX reconstruction
+
+The K514 MMVQ wrapper contains both its production cubin and original PTX.
+The wrapper extractor now derives embedded fatbin length from the CUDA fatbin
+header, allowing wrapper 39 to be reconstructed without replacing K514 host
+code or unrelated CUDA modules. Fixed-seed output lengths matched K514 after
+reassembly, unlike current-source CUDA transplants.
+
+Q8 J6 register limits of 64 and 72 regressed. Combining adjacent packed Q8
+loads into 32-bit loads caused an alignment fault and was rejected without a
+resident-model leak. Reusing scale conversions preserved output but did not
+improve the reassembly control. Driver JIT was also slower.
+
+On fused IQ3_S, 128-byte L2 prefetch hints improved the three-seed reassembly
+control from 282.036 to 283.095 tok/s. The 64-byte and 256-byte variants were
+slower, and adding IQ4_XS prefetch hints regressed. This is a positive kernel
+signal but not a qualifying result, so no engine or launcher is promoted.

@@ -647,3 +647,22 @@ Adding L2 prefetch hints to the remaining IQ3_S metadata loads also regressed.
 The special 1,600-token map reached 291.679 tok/s but produced truncated or
 invalid C++ on every seed and was rejected. No launcher is promoted; the 285
 target remains active and needs another quality-safe compute-path improvement.
+
+## K1126-K1145 - vocabulary, hardware state, and Q8 scheduling
+
+Reducing the MTP vocabulary from 40,192 to 40,064 caused an acceptance cliff
+and fell to 250.754 tok/s. Increasing it to 40,320 preserved acceptance but
+did not improve throughput. The 40,192 cutoff remains fixed. Ranked map size
+1,568, one HTTP worker, and isolated IQ3_S edge-load prefetch hints regressed.
+
+GPU telemetry showed dynamic clocks from 1,950 to 2,070 MHz, but the already
+qualified 2,145/2,190 MHz lock, 100% fan, and +100 MHz offset states did not
+add to the reduced-vocabulary candidate. Each hardware test restored automatic
+fan control, zero offset, and NVIDIA clock defaults. A host sampler bit-scan
+prototype was rejected because rebuilding the accumulated dirty host worktree
+was not an isolated binary change and measured 264.793 tok/s.
+
+The historical Q8 J6 xcache cubin changed eight address increments. A hybrid
+retained the K1097 opcodes and transplanted only 64 donor scheduling words;
+its disassembled instruction stream matched the control, but it regressed to
+258.995 tok/s. The verified engine and launcher remain unchanged.

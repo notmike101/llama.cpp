@@ -632,3 +632,18 @@ On fused IQ3_S, 128-byte L2 prefetch hints improved the three-seed reassembly
 control from 282.036 to 283.095 tok/s. The 64-byte and 256-byte variants were
 slower, and adding IQ4_XS prefetch hints regressed. This is a positive kernel
 signal but not a qualifying result, so no engine or launcher is promoted.
+
+## K1102-K1125 - 285 qualification and IQ3_S follow-up
+
+The quality-safe IQ3_S prefetch engine crossed once at 285.606 tok/s with the
+ranked 1,550-token map and draft p-min 0.16, but the reverse-order repeat was
+280.229 tok/s. The crossing is therefore noise-sensitive and not promotable.
+The ranked 1,575-token map produced the strongest repeatable safe median at
+284.351 tok/s while preserving the reference output-token trajectory.
+
+Seven or nine threads, zero polling, MTP depth four or six, p-split 0.08 or
+0.12, p-min 0.165, and a conservative 2,100 MHz clock lock all regressed.
+Adding L2 prefetch hints to the remaining IQ3_S metadata loads also regressed.
+The special 1,600-token map reached 291.679 tok/s but produced truncated or
+invalid C++ on every seed and was rejected. No launcher is promoted; the 285
+target remains active and needs another quality-safe compute-path improvement.

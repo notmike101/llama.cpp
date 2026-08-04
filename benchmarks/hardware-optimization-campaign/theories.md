@@ -554,3 +554,37 @@ K275 narrowed the MSVC preprocessor branch to x86/x64 as a source-only
 portability refinement. The resulting DLL replayed at 257.018 tok/s over five
 seeds, below the target, so both the refinement and its DLL were rejected. The
 exact 7A4A8EB3 qualified DLL was restored before promotion.
+
+## B1003-P1002-K1023 - new +15 campaign
+
+B1003 freshly established the exact production generation-only median at
+258.429 tok/s, making 273.429 the fixed target. P1002 localized the largest GPU
+cost to Q8_0 six-column verification (23.0%), followed by fused IQ3_S (14.8%)
+and IQ4_XS (10.7%). Host-side CUDA API time remained synchronization-bound.
+
+Reducing target projection work was effective but quality-sensitive. The raw
+1,200/1,600 ID truncations were fast and invalid because all answers exhausted
+the output cap. The 2,376-token union map stopped correctly but supplied only
+about 7 tok/s. Frequency ranking across D299-D302 preserved recurrent short,
+cold-stream, medium, and near-max candidates; 1,800 tokens plus K511 and a
+40,192-token draft head crossed the target in one batch, but not in two
+repeats. All qualifying runs remain in the aggregation, so the arm is not a
+promotion.
+
+K516b's IQ4 package and K637/K718 CUDA transplants did not transfer to this
+35B workload. The next discriminating experiment must improve the exact K511
+Q8 J6 or fused IQ3_S kernel by enough to add at least 1.5-2.0% beyond the
+ranked-map stack, then repeat three five-seed batches before the full mode
+matrix. Further target-map pruning is lower priority because it changes the
+model distribution and already exposed stop failures.
+
+## K1024-K1039 - K514 in-place Q8 J6 promotion
+
+- Prediction: retaining the Q8 J6 single-worker layout while eliminating its
+  source staging copy will supply the remaining 1-2 percent without changing
+  the target distribution.
+- Result: K514 with the ranked 1,800-token map and 40,192-token MTP head held a
+  275.385 tok/s median over 10 forward/reverse runs, 16.956 tok/s above B1003.
+- Decision: promoted. Identical-seed output lengths matched across the repeats,
+  all 10 programs compiled and ran, and the production matrix passed except
+  native structured tool formatting, which is unsupported.

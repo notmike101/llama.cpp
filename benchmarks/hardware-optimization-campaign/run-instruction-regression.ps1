@@ -6,7 +6,10 @@ param(
     [int]$ArchiveRepeats = 680,
     [int]$RequestMaxTokens = 128,
     [switch]$IncludeTools,
-    [switch]$SkipChatParsing
+    [switch]$SkipChatParsing,
+    [string]$Engine = '',
+    [string]$TargetHotmap = '',
+    [int]$MtpVocab = 40960
 )
 
 Set-StrictMode -Version Latest
@@ -15,7 +18,7 @@ $ErrorActionPreference = 'Stop'
 $root = 'C:\llama-cpp-src'
 $campaign = Join-Path $root 'benchmarks\hardware-optimization-campaign'
 $output = Join-Path $campaign $Id
-$engine = Join-Path $root 'engines\k424-context-skip5\llama-server.exe'
+$engine = if ($Engine) { $Engine } else { Join-Path $root 'engines\k424-context-skip5\llama-server.exe' }
 $model = Join-Path $root 'Qwen3.6-35B-A3B-MTP-GGUF\Qwen3.6-35B-A3B-UD-Q3_K_M.gguf'
 $serverLog = Join-Path $output 'SERVER-LOG.txt'
 $serverOut = Join-Path $output 'SERVER-OUT.txt'
@@ -32,8 +35,8 @@ $env:GGML_CUDA_GRAPH_OPT = '1'
 $env:LLAMA_QWEN35_CONTEXT_SKIP5 = $null
 $env:LLAMA_QWEN35_CONTEXT_SKIP5_MAX = $null
 $env:LLAMA_SPEC_TARGET_FAST_SAMPLE = '1'
-$env:LLAMA_QWEN35_TARGET_HOTMAP = Join-Path $campaign 'qwen36-skipmiddle4-target-hotmap.txt'
-$env:LLAMA_QWEN35_MTP_VOCAB = '40960'
+$env:LLAMA_QWEN35_TARGET_HOTMAP = if ($TargetHotmap) { $TargetHotmap } else { Join-Path $campaign 'qwen36-skipmiddle4-target-hotmap.txt' }
+$env:LLAMA_QWEN35_MTP_VOCAB = [string]$MtpVocab
 $env:LLAMA_SERVER_DEVICE_CHECKPOINT = '1'
 $env:GGML_CUDA_Q8_SOURCE_REUSE = '1'
 $env:GGML_CUDA_Q8_PERSISTENT_SOURCE_REUSE = '1'

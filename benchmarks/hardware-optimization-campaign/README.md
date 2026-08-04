@@ -199,3 +199,44 @@ streamed, and 135,097-token cold non-streamed validation also matched control
 hashes and passed. The near-maximum request decoded at 164.778 tok/s after
 76,966 ms prompt processing. VRAM returned to its pre-run value after every
 run.
+
+## 2026-08-04 new +15 tok/s campaign
+
+Fresh exact-production baseline B1003 used `k424-context-skip5` with context
+skipping disabled, the 11,816-token target map, 40,960-token MTP head, depth
+five, production sampling, 150,000 context, backend sampling, and the qualified
+2190/9751 MHz launcher hardware profile. Five raw generation-only results were
+242.843, 281.260, 275.081, 258.429, and 249.816 tok/s. The ordinary median is
+258.429 tok/s; server decode is 258.387, stream total is 244.671, and TTFT is
+88.627 ms. The fixed target is therefore 273.429 tok/s generation-only.
+
+P1002 attributed 23.0% of CUDA kernel time to Q8_0 six-column verification,
+14.8% to fused IQ3_S MoE, and 10.7% to IQ4_XS MoE. CUDA API time was dominated
+by `cudaStreamSynchronize` at 63.3%. K511's exact Q8_0 six-column package was
+the best kernel candidate. Combined with a frequency-ranked 1,800-token target
+map and a 40,192-token draft head, K1016 first reached 273.766 tok/s, but the
+reverse and third five-seed batches reached only 271.369 and 269.584. The
+ordinary all-15 median does not meet the target, so this stack is not promoted.
+
+Raw ID-truncated 1,200/1,600-token target maps exceeded 288 tok/s but every
+response hit the 512-token cap and they were rejected. A 2,376-token map
+stopped naturally and reached 265.709; adding a 40,192-token draft head reached
+271.187 once. Frequency-ranked maps preserved natural stopping but 1,600 and
+1,700-token variants remained below target. K516b IQ4 and K637/K718 CUDA
+transplants also regressed. No launcher has been changed. The next theory is
+an exact Q8_0 six-column or fused IQ3_S kernel improvement on the K511 host.
+
+## 2026-08-04 K514 promotion
+
+K514 combines the qualified Q8 J6 single-worker kernel with in-place source
+reuse. With the frequency-ranked 1,800-token target map and a 40,192-token MTP
+head, forward and reverse five-seed medians were 274.246 and 275.906 tok/s. The
+combined 10-run median was 275.385 tok/s, 16.956 tok/s above B1003.
+
+All 10 generated C++ programs compiled with MSVC C++20 `/W4 /WX` and passed
+their assertions. K1029-K1039 cover cold and warm starts, streaming and
+non-streaming requests, 13,597- and 135,097-token occupied contexts, 128- and
+512-token limits, exact-output isolation, parser-disabled mode, raw non-MTP
+decoding, and llama-bench diagnostics. Structured tool calls remain unsupported
+for this model path: the unused-tool request returned HTTP 500 for a native
+format mismatch, while plain chat passed.

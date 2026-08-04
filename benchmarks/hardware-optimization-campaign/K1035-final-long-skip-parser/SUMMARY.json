@@ -1,0 +1,41 @@
+{
+  "required_temperature": 0.6,
+  "requested_max_tokens": 128,
+  "grammar_tools_present": false,
+  "skip_chat_parsing": true,
+  "context_skip5": false,
+  "all_exact": true,
+  "all_stopped_before_cap": true,
+  "rows": [
+    {
+      "seed": 101,
+      "prompt_tokens": 21708,
+      "completion_tokens": 2,
+      "text": "Hello",
+      "exact": true,
+      "finish_reason": "stop",
+      "wall_ms": 8450.4253,
+      "server_decode_tps": 43.02648280016351
+    },
+    {
+      "seed": 202,
+      "prompt_tokens": 21708,
+      "completion_tokens": 2,
+      "text": "Hello",
+      "exact": true,
+      "finish_reason": "stop",
+      "wall_ms": 104.4011,
+      "server_decode_tps": 80.35678412149946
+    },
+    {
+      "seed": 303,
+      "prompt_tokens": 21708,
+      "completion_tokens": 2,
+      "text": "Hello",
+      "exact": true,
+      "finish_reason": "stop",
+      "wall_ms": 102.305,
+      "server_decode_tps": 70.05990121553928
+    }
+  ]
+}

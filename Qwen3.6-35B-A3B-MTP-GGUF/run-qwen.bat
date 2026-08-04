@@ -1,12 +1,13 @@
 @echo off
 setlocal EnableExtensions
 
-rem Optimized llama.cpp context-aware skip build qualified on RTX 3090.
+rem Optimized llama.cpp Qwen MTP build qualified on RTX 3090.
 if not defined LLAMA_SERVER set "LLAMA_SERVER=C:\llama-cpp-src\engines\k424-context-skip5\llama-server.exe"
 if not defined MODEL set "MODEL=C:\llama-cpp-src\Qwen3.6-35B-A3B-MTP-GGUF\Qwen3.6-35B-A3B-UD-Q3_K_M.gguf"
 if not defined HOST set "HOST=0.0.0.0"
 if not defined PORT set "PORT=8080"
 if not defined MODEL_ALIAS set "MODEL_ALIAS=qwen3.6-35b-a3b@q3_k_m"
+if not defined UI_CONFIG set "UI_CONFIG=%~dp0qwen-ui-config.json"
 if not defined NGL set "NGL=all"
 if not defined CTX set "CTX=150000"
 if not defined BATCH set "BATCH=2048"
@@ -37,6 +38,7 @@ if not defined SPEC_DRAFT_N_MIN set "SPEC_DRAFT_N_MIN=0"
 if not defined SPEC_DRAFT_P_MIN set "SPEC_DRAFT_P_MIN=0.0"
 if not defined SPEC_DRAFT_P_SPLIT set "SPEC_DRAFT_P_SPLIT=0.0"
 if not defined MTP_DRAFT_VOCAB set "MTP_DRAFT_VOCAB=40960"
+if not defined ENABLE_CONTEXT_SKIP5 set "ENABLE_CONTEXT_SKIP5=0"
 if not defined SPEC_ARGS set "SPEC_ARGS="
 
 set "GGML_CUDA_Q8_SOURCE_REUSE=1"
@@ -49,8 +51,13 @@ set "LLAMA_SERVER_DEVICE_CHECKPOINT=1"
 set "LLAMA_QWEN35_MTP_VOCAB=%MTP_DRAFT_VOCAB%"
 set "LLAMA_SPEC_TARGET_FAST_SAMPLE=1"
 set "LLAMA_QWEN35_TARGET_HOTMAP=C:\llama-cpp-src\benchmarks\hardware-optimization-campaign\qwen36-skipmiddle4-target-hotmap.txt"
-set "LLAMA_QWEN35_CONTEXT_SKIP5=1"
-set "LLAMA_QWEN35_CONTEXT_SKIP5_MAX=4096"
+if "%ENABLE_CONTEXT_SKIP5%"=="1" (
+    set "LLAMA_QWEN35_CONTEXT_SKIP5=1"
+    set "LLAMA_QWEN35_CONTEXT_SKIP5_MAX=4096"
+) else (
+    set "LLAMA_QWEN35_CONTEXT_SKIP5="
+    set "LLAMA_QWEN35_CONTEXT_SKIP5_MAX="
+)
 
 set "AB_STARTED=0"
 set "HARDWARE_TUNED=0"
@@ -93,6 +100,7 @@ if not "%GPU_MEMORY_CLOCK%"=="0" (
     --spec-draft-threads "%THREADS%" ^
     --spec-draft-threads-batch "%THREADS%" ^
     --alias "%MODEL_ALIAS%" ^
+    --ui-config-file "%UI_CONFIG%" ^
     --host "%HOST%" ^
     --port "%PORT%" ^
     -ngl "%NGL%" ^
@@ -110,6 +118,7 @@ if not "%GPU_MEMORY_CLOCK%"=="0" (
     -ctv f16 ^
     --reasoning "%REASONING%" ^
     --reasoning-format "%REASONING_FORMAT%" ^
+    --skip-chat-parsing ^
     --temp "%LLAMA_TEMP%" ^
     --top-k "%TOP_K%" ^
     --top-p "%TOP_P%" ^

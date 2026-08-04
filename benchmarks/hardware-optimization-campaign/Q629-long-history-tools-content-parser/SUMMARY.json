@@ -1,0 +1,21 @@
+{
+  "required_temperature": 0.6,
+  "requested_max_tokens": 128,
+  "grammar_tools_present": true,
+  "skip_chat_parsing": true,
+  "context_skip5": false,
+  "all_exact": true,
+  "all_stopped_before_cap": true,
+  "rows": [
+    {
+      "seed": 101,
+      "prompt_tokens": 21950,
+      "completion_tokens": 2,
+      "text": "Hello",
+      "exact": true,
+      "finish_reason": "stop",
+      "wall_ms": 8807.2555,
+      "server_decode_tps": 45.43802253725918
+    }
+  ]
+}

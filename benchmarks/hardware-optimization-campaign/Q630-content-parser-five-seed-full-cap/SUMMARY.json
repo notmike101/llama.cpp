@@ -1,0 +1,61 @@
+{
+  "required_temperature": 0.6,
+  "requested_max_tokens": 32000,
+  "grammar_tools_present": true,
+  "skip_chat_parsing": true,
+  "context_skip5": false,
+  "all_exact": true,
+  "all_stopped_before_cap": true,
+  "rows": [
+    {
+      "seed": 101,
+      "prompt_tokens": 21950,
+      "completion_tokens": 2,
+      "text": "Hello",
+      "exact": true,
+      "finish_reason": "stop",
+      "wall_ms": 8849.1234,
+      "server_decode_tps": 45.91789879695106
+    },
+    {
+      "seed": 202,
+      "prompt_tokens": 21950,
+      "completion_tokens": 2,
+      "text": "Hello",
+      "exact": true,
+      "finish_reason": "stop",
+      "wall_ms": 104.3339,
+      "server_decode_tps": 72.18913553510197
+    },
+    {
+      "seed": 303,
+      "prompt_tokens": 21950,
+      "completion_tokens": 2,
+      "text": "Hello",
+      "exact": true,
+      "finish_reason": "stop",
+      "wall_ms": 104.0232,
+      "server_decode_tps": 71.38013490845498
+    },
+    {
+      "seed": 404,
+      "prompt_tokens": 21950,
+      "completion_tokens": 2,
+      "text": "Hello",
+      "exact": true,
+      "finish_reason": "stop",
+      "wall_ms": 110.0637,
+      "server_decode_tps": 72.31180851833103
+    },
+    {
+      "seed": 505,
+      "prompt_tokens": 21950,
+      "completion_tokens": 2,
+      "text": "Hello",
+      "exact": true,
+      "finish_reason": "stop",
+      "wall_ms": 108.0789,
+      "server_decode_tps": 66.47831145088915
+    }
+  ]
+}

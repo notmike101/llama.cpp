@@ -1,0 +1,39 @@
+0.00.034.289 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
+0.00.096.763 I srv          init: The UI is disabled
+0.00.096.768 I srv          init: Use --ui/--no-ui (or deprecated --webui/--no-webui) to enable/disable
+0.00.096.901 W srv  llama_server: -----------------
+0.00.096.901 W srv  llama_server: CORS is set to allow all origins ('*') and no API key is set
+0.00.096.901 W srv  llama_server: this can be a security risk (cross-origin attacks)
+0.00.096.901 W srv  llama_server: more info: https://github.com/ggml-org/llama.cpp/pull/25655
+0.00.096.902 W srv  llama_server: -----------------
+0.00.100.833 I srv    load_model: loading model 'C:\llama-cpp-src\Qwen3.6-35B-A3B-MTP-GGUF\Qwen3.6-35B-A3B-UD-Q3_K_M.gguf'
+0.06.366.869 I srv    load_model: initializing, n_slots = 1, n_ctx_slot = 150016, kv_unified = 'false'
+0.06.507.165 I srv          init: chat template supports preserving reasoning, consider enabling it via --reasoning-preserve
+0.06.507.186 I srv  llama_server: model loaded
+0.06.507.187 I srv  llama_server: listening on http://127.0.0.1:18081
+0.51.244.691 I slot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = -1
+0.51.244.833 W common_sampler_init: backend sampling is not compatible with grammar, disabling
+0.51.244.839 I slot launch_slot_: id  0 | task 0 | processing task, is_child = 0
+0.54.413.728 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =   8455, progress = 0.39, t =   3.17 s / 2668.15 tokens per second
+0.55.185.643 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  10503, progress = 0.48, t =   3.94 s / 2665.21 tokens per second
+0.55.990.202 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  12551, progress = 0.57, t =   4.75 s / 2644.91 tokens per second
+0.56.821.863 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  14599, progress = 0.67, t =   5.58 s / 2617.71 tokens per second
+0.57.656.469 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  16647, progress = 0.76, t =   6.41 s / 2596.38 tokens per second
+0.58.498.043 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  18695, progress = 0.85, t =   7.25 s / 2577.49 tokens per second
+0.59.381.990 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  20743, progress = 0.94, t =   8.14 s / 2549.18 tokens per second
+0.59.723.732 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  21436, progress = 0.98, t =   8.48 s / 2528.17 tokens per second
+0.59.986.157 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  21933, progress = 1.00, t =   8.74 s / 2509.12 tokens per second
+1.00.072.532 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  21948, progress = 1.00, t =   8.83 s / 2486.27 tokens per second
+1.00.997.121 I slot print_timing: id  0 | task 0 | prompt eval time =    8901.41 ms / 21952 tokens (    0.41 ms per token,  2466.13 tokens per second)
+1.00.997.127 I slot print_timing: id  0 | task 0 |        eval time =     850.66 ms /   128 tokens (    6.65 ms per token,   150.47 tokens per second)
+1.00.997.128 I slot print_timing: id  0 | task 0 |       total time =    9752.08 ms / 22080 tokens
+1.00.997.129 I slot print_timing: id  0 | task 0 |    graphs reused =         36
+1.00.997.134 I slot print_timing: id  0 | task 0 | draft acceptance = 0.47849 (   89 accepted /   186 generated), mean len =  3.34
+1.00.997.669 I slot      release: id  0 | task 0 | stop processing: n_tokens = 22079, truncated = 0
+1.00.997.708 W common_chat_peg_parse: unparsed peg-native output: <think>
+
+</think>
+
+LECT.c0. environmental environmental environmental. environmental. environmental. environmental. environmental. environmental. environmental. environmental. environmental.¼ environmental. environmental. environmental. environmental. environmental. environmental. environmental. environmental. environmental. environmental. environmental. environmental. environmental. environmental. environmental. environmental. environmental. environmental. environmental. environmental. environmental. environmental. environmental. environmental. environmental. environmental. environmental. environmental. environmental. environmental. environmental. environmental. environmental. environmental. environmental. environmental. environmental. environmental. environmental. environmental. environmental. environmental. environmental. environmental. environmental. environmental. environmental. environmental. environmental. environmental. environmental. environmental
+1.00.997.766 W srv          stop: cancel task, id_task = 0
+1.00.997.813 W srv   operator (): got exception: {"error":{"code":500,"message":"The model produced output that does not match the expected peg-native format","type":"server_error"}}

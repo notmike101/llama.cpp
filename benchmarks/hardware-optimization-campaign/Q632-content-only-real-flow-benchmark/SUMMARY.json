@@ -1,0 +1,63 @@
+{
+  "contract": {
+    "temperature": 0.6,
+    "top_k": 20,
+    "top_p": 0.95,
+    "min_p": 0.0,
+    "tools": true,
+    "chat_format": "Content-only",
+    "max_tokens": 512,
+    "runs": 5
+  },
+  "median_decode_tps": 125.383312950382,
+  "min_decode_tps": 108.93603114549215,
+  "max_decode_tps": 189.96495295028188,
+  "median_prompt_tps": 118.72254541137362,
+  "rows": [
+    {
+      "seed": 101,
+      "prompt_tokens": 19956,
+      "completion_tokens": 512,
+      "finish_reason": "length",
+      "prompt_tps": 2480.4963578119723,
+      "decode_tps": 189.96495295028188,
+      "wall_seconds": 10.8012338
+    },
+    {
+      "seed": 202,
+      "prompt_tokens": 19956,
+      "completion_tokens": 512,
+      "finish_reason": "length",
+      "prompt_tps": 111.52934615920813,
+      "decode_tps": 158.62511680013483,
+      "wall_seconds": 3.3068187
+    },
+    {
+      "seed": 303,
+      "prompt_tokens": 19956,
+      "completion_tokens": 512,
+      "finish_reason": "length",
+      "prompt_tps": 118.72254541137362,
+      "decode_tps": 115.05222404712826,
+      "wall_seconds": 4.5235483
+    },
+    {
+      "seed": 404,
+      "prompt_tokens": 19956,
+      "completion_tokens": 512,
+      "finish_reason": "length",
+      "prompt_tps": 112.44799280332845,
+      "decode_tps": 125.383312950382,
+      "wall_seconds": 4.1618798
+    },
+    {
+      "seed": 505,
+      "prompt_tokens": 19956,
+      "completion_tokens": 512,
+      "finish_reason": "length",
+      "prompt_tps": 119.39585696376335,
+      "decode_tps": 108.93603114549215,
+      "wall_seconds": 4.7722177
+    }
+  ]
+}

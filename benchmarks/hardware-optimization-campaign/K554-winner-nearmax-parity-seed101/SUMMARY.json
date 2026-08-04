@@ -1,0 +1,30 @@
+{
+  "mode": "nonstream",
+  "warmup": false,
+  "prompt_file": "",
+  "context_repeat": 5000,
+  "max_tokens": 512,
+  "spec_type": "draft-mtp",
+  "batch": 2048,
+  "ubatch": 512,
+  "seeds": [
+    101
+  ],
+  "stream_total_tps_median": 5.136477583956052,
+  "stream_generation_only_tps_median": 206.61794363346095,
+  "server_decode_tps_median": 206.61794363346095,
+  "ttft_ms_median": 67049.193,
+  "raw_results": [
+    {
+      "seed": 101,
+      "output_tokens": 355.0,
+      "server_decode_tps": 206.61794363346095,
+      "stream_total_tps": 5.136477583956052,
+      "stream_generation_only_tps": 206.61794363346095,
+      "ttft_ms": 67049.193,
+      "wall_ms": 69113.511,
+      "prompt_tokens": 135097.0,
+      "prompt_ms": 67049.193
+    }
+  ]
+}

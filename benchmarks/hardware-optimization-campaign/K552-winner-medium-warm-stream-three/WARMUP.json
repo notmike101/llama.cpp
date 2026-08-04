@@ -1,0 +1,9 @@
+{
+  "seed": 999,
+  "output_tokens": 399.0,
+  "server_decode_tps": 283.6173653439482,
+  "stream_total_tps": 72.37818723877868,
+  "stream_generation_only_tps": 286.48715482067405,
+  "ttft_ms": 4114.8448,
+  "wall_ms": 5512.7106
+}

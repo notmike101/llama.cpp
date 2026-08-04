@@ -14,7 +14,7 @@ if not defined UBATCH set "UBATCH=512"
 if not defined THREADS set "THREADS=10"
 if not defined PARALLEL set "PARALLEL=1"
 if not defined EXTRA_ARGS set "EXTRA_ARGS="
-if not defined GPU_CLOCK set "GPU_CLOCK=1935"
+if not defined GPU_CLOCK set "GPU_CLOCK=2145"
 if not defined GPU_MEMORY_CLOCK set "GPU_MEMORY_CLOCK=9751"
 
 rem Sampling defaults applied to every request unless the caller overrides.

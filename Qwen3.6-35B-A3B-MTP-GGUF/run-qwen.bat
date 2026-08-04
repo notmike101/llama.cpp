@@ -18,6 +18,7 @@ if not defined EXTRA_ARGS set "EXTRA_ARGS="
 if not defined GPU_CLOCK set "GPU_CLOCK=2190"
 if not defined GPU_MEMORY_CLOCK set "GPU_MEMORY_CLOCK=9751"
 if not defined ENABLE_HARDWARE_TUNING set "ENABLE_HARDWARE_TUNING=1"
+if not defined GPU_FAN_MODE set "GPU_FAN_MODE=auto"
 if not defined GPU_FAN set "GPU_FAN=100"
 if not defined GPU_CORE_OFFSET set "GPU_CORE_OFFSET=100000"
 if not defined MSI_AFTERBURNER set "MSI_AFTERBURNER=C:\Program Files (x86)\MSI Afterburner\MSIAfterburner.exe"
@@ -60,7 +61,11 @@ if "%ENABLE_HARDWARE_TUNING%"=="1" (
         timeout /t 5 /nobreak >nul
         set "AB_STARTED=1"
     )
-    "%MACM_CONTROL%" "%GPU_FAN%" 0 "%GPU_CORE_OFFSET%" 0 >nul
+    if /I "%GPU_FAN_MODE%"=="auto" (
+        "%MACM_CONTROL%" 0 1 "%GPU_CORE_OFFSET%" 0 >nul
+    ) else (
+        "%MACM_CONTROL%" "%GPU_FAN%" 0 "%GPU_CORE_OFFSET%" 0 >nul
+    )
     if errorlevel 1 goto hardware_error
     set "HARDWARE_TUNED=1"
 )

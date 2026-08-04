@@ -1,7 +1,7 @@
 $nsys = 'C:\Program Files\NVIDIA Corporation\Nsight Systems 2026.1.3\target-windows-x64\nsys.exe'
 $server = 'C:\llama-cpp-src\build-audit-35b-mixed\bin\llama-server.exe'
 $model = 'C:\llama-cpp-src\Qwen3.6-35B-A3B-MTP-GGUF\Qwen3.6-35B-A3B-UD-Q3_K_M.gguf'
-$out = 'C:\llama-cpp-src\benchmarks\hardware-optimization-campaign\profiles\P020-mixed-q6fix-finalist'
+$out = 'C:\llama-cpp-src\benchmarks\hardware-optimization-campaign\profiles\P021-q6-smallk-bounds'
 New-Item -ItemType Directory -Path (Split-Path $out) -Force | Out-Null
 
 $serverArgs = @(

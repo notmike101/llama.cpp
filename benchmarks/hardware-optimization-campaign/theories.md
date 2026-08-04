@@ -456,3 +456,101 @@ fixed-seed outputs were byte-identical across repeats and passed warning-clean
 compilation and execution. The warm/cold, streamed/non-streamed, 13,597-token,
 and 135,097-token matrix passed with 67.0%-78.9% draft acceptance and exact
 VRAM return. The launcher now defaults `SPEC_DRAFT_P_MIN` to 0.0.
+
+## B171-M222 - 220 tok/s campaign
+
+Three fresh, independent five-seed controls measured 218.923, 221.737, and
+217.976 tok/s generation-only. The ordinary median across all 15 raw runs was
+218.923 tok/s, so the stable target gap is 1.077 tok/s. This baseline was found
+experimentally and was not inferred from historical campaign results.
+
+Nsight Compute P196 measured the Q8_0 six-column MMVQ kernel at 30.91 us,
+670.48 GB/s, 49.06% achieved occupancy, and 34.5% L1TEX scoreboard stalls.
+P201 measured the Q6_K one-column 248,320-row vocabulary projection at 492.38
+us, 850.20 GB/s, 90.05% achieved occupancy, and 93.31% DRAM throughput.
+
+Runtime and hardware screens rejected core offsets, NVIDIA mode 1, core locks
+from 1875 through 1950 MHz, memory offsets of +100 and +215 MHz, forced fan,
+high priority, physical affinity, host threads 8, 9, 11, and 12, and CUDA
+connection counts 1 and 16.
+
+Explicit Q8_0 weight reuse measured 216.034 tok/s. Three- and four-row Q8_0
+six-column blocks measured 213.315 and 218.378 tok/s. A two-row Q6_K
+one-column block reached 219.309 once but fell to 214.903 on an independent
+repeat. Explicit activation reuse reached 218.955. All source experiments
+were removed.
+
+Position-specific MTP cutoffs at 0.10, 0.20, and 0.50 did not improve depth
+five. Selectively enabling the sixth position at a 0.10 confidence threshold
+measured 208.046 tok/s over three seeds and was removed. No candidate met the
+220 tok/s stability contract, so no source, launcher, engine, or commit was
+promoted.
+
+## M223-V237 - MoE draft-vocabulary projection
+
+M223-M225 applied the existing dense-Qwen prefix trim to the production engine
+and measured an ordinary 15-run median of 218.502 tok/s. P227 then showed that
+all 129 sequential Q6_K draft projections still covered 248,320 rows. The
+experiment was a no-op because Qwen3.6-35B-A3B uses the MoE graph in
+`qwen35moe.cpp`, not the dense graph in `qwen35.cpp`.
+
+The same view, compact projection, and full-logit scatter were added to the MoE
+MTP head. P230 recorded 126 compact 65,536-row projections at 135.74 us average,
+versus about 523 us for the full projection. Target verification retained its
+full-vocabulary six-column projection.
+
+M231-M233 produced five-seed generation medians of 238.354, 236.269, and
+236.196 tok/s. The ordinary all-15 median was 236.269 tok/s; server decode was
+236.321 tok/s, stream total was 223.156 tok/s, and TTFT was 95.538 ms. All
+answers matched the control hashes, 15/15 compiled warning-clean and passed,
+and the warm/cold plus long-context matrix passed 4/4. The 135,097-token cold
+request decoded at 159.280 tok/s after 76,322 ms prompt processing.
+
+## B238-V257 - 245 tok/s target fast sampling
+
+B238-B240 established a fresh 235.369 tok/s ordinary all-15 control. A 32K
+draft prefix lost critical tokens and fell to 213.208 tok/s. Debug traces showed
+only nine distinct top draft IDs above 32K across 2,355 choices, leaving a
+frequency-ranked packed head as future work. Depth six reached 227.532 tok/s,
+and the official Q4_0 standalone MTP draft reached 229.004 tok/s.
+
+The post-trim trace attributed 16.9% of GPU time to Q8_0 six-column MMVQ, but
+forcing that shape through MMQ reached only 212.244 tok/s and was removed.
+The current dirty source cannot reproduce the packaged CUDA stack, so further
+CUDA candidates require a clean reconstruction rather than replacing the
+qualified DLL.
+
+The target sampler's neutral-penalty fixed contract permits exact top-20
+preselection before the remaining sampler chain. An AVX2 heap scan reached
+250.566 tok/s in isolation. Skipping the entry synchronization alone regressed
+to 230.293 and was rejected. Three full fast-sampler batches measured 254.057,
+254.955, and 259.620 tok/s; their all-15 ordinary median was 254.955 tok/s.
+All hashes and 19 compile/runtime checks passed, along with the full real-use
+matrix.
+
+The final clean implementation uses the ordinary synchronized logits API and
+guards AVX2 intrinsics with a scalar fallback. Three new five-seed batches on
+that final binary measured 247.726, 248.519, and 247.383 tok/s; their ordinary
+all-15 median was 247.726 tok/s generation-only and 231.862 tok/s stream total.
+
+## B263-V274 - MSVC AVX2 recovery and 40,960-token draft prefix
+
+B263 freshly reproduced the committed winner at 248.552 tok/s over five seeds.
+Inspection of the final DLL build exposed that its AVX2 preprocessor guard was
+false under MSVC, so the qualified binary used the scalar scan. K264 replaced
+the compile-time-only decision with CPUID, OSXSAVE/XGETBV, and AVX2 checks. It
+preserved a scalar fallback and measured 251.849 tok/s over three seeds.
+
+The remaining sequential draft projection was screened at 49,152, 40,960, and
+40,192 rows. The 40,960 candidate preserved all control trajectories while its
+first three-seed screen reached 266.726 tok/s. Three full five-seed batches
+measured 267.939, 262.756, and 262.243 tok/s. Their ordinary all-15 median was
+262.756 tok/s, +15.029 over the previous qualification. All 19 fixed and matrix
+answers matched control hashes, compiled warning-clean, and passed. The
+40,192-row screen did not establish a clearer advantage, so 40,960 was retained
+as the less aggressive cutoff.
+
+K275 narrowed the MSVC preprocessor branch to x86/x64 as a source-only
+portability refinement. The resulting DLL replayed at 257.018 tok/s over five
+seeds, below the target, so both the refinement and its DLL were rejected. The
+exact 7A4A8EB3 qualified DLL was restored before promotion.

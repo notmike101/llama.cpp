@@ -39,9 +39,9 @@ had 11,768.13 ms prompt time and 181.50 tok/s decode. Each response remained a
 warning-clean passing C++20 program. Nsight Systems P020 captured the finalist;
 quantized matrix-vector kernels remained the dominant GPU cost.
 
-Target: median sampled generation speed >= 215 tok/s across five rotating seeds.
+Target: median sampled generation speed >= 220 tok/s across five rotating seeds.
 
-Fixed contract: Qwen3.6-35B-A3B MTP UD-Q3_K_M, CUDA, context 150000, one request, 512 output limit, reasoning off, temperature 0.6, top-k 20, top-p 0.95, min-p 0.0, batch 2048, microbatch 512, F16 KV, MTP depth 4, backend sampling.
+Fixed contract: Qwen3.6-35B-A3B MTP UD-Q3_K_M, CUDA, context 150000, one request, 512 output limit, reasoning off, temperature 0.6, top-k 20, top-p 0.95, min-p 0.0, batch 2048, microbatch 512, F16 KV, MTP depth 5, backend sampling.
 
 Host: Windows 11 Pro, Intel i9-10900KF (10C/20T), RTX 3090 24 GiB, driver 610.62. Repository commit 40b740ad05c531b9d57aca6698c3ed553a9e784c.
 
@@ -132,3 +132,70 @@ MSVC C++20 `/W4 /WX` compilation and execution. Warm non-streamed, cold
 streamed, 13,597-token warm streamed, and 135,097-token cold non-streamed runs
 also compiled and passed. MTP remained active with 71.0%-78.9% acceptance in
 the validation matrix, and VRAM returned exactly to 490 MiB after every run.
+
+## 2026-08-03 MoE draft-vocabulary qualification
+
+The A3B MTP graph now limits its draft LM-head projection to the first 65,536
+tokens and scatters those logits into the unchanged 248,320-token output. The
+target model continues to verify the full vocabulary. Three five-seed streamed
+batches measured 238.354, 236.269, and 236.196 tok/s generation-only. The
+ordinary 15-run median was 236.269 tok/s, with a 223.156 tok/s stream-total
+median and 95.538 ms TTFT median. This is +17.346 tok/s over the fresh 218.923
+tok/s generation baseline and +17.500 tok/s over its 205.656 stream-total
+baseline.
+
+All 15 fixed-seed answers matched the control hashes and passed MSVC C++20
+`/W4 /WX` compilation and execution. Warm non-streamed, cold streamed,
+13,597-token warm streamed, and 135,097-token cold non-streamed validation also
+passed. Nsight Systems measured the sequential Q6_K draft projection falling
+from about 67 ms to 17 ms per 128-token trace. VRAM and clocks returned to the
+631 MiB, 1695/9751 MHz idle state after validation.
+
+## 2026-08-03 target fast-sampling qualification
+
+Three fresh five-seed controls re-established the MoE vocabulary winner at an
+ordinary 235.369 tok/s generation-only median, 235.326 tok/s server decode,
+221.895 tok/s stream total, and 96.713 ms TTFT. This established a 9.631 tok/s
+gap to the new 245 tok/s target without relying on historical results.
+
+The qualified sampler first finds the exact top 20 candidates with an AVX2
+heap scan, then applies the unchanged top-k, top-p, min-p, temperature, and
+distribution sampler chain. It activates only for the fixed neutral-penalty
+sampling contract. Three candidate batches measured 254.057, 254.955, and
+259.620 tok/s. The ordinary all-15 median was 254.955 tok/s generation-only,
+255.030 tok/s server decode, 237.425 tok/s stream total, and 94.788 ms TTFT.
+
+A clean reconstruction removed the rejected no-sync infrastructure and added a
+portable scalar fallback for non-AVX2 builds. Its three final five-seed batches
+measured 247.726, 248.519, and 247.383 tok/s. The final binary's ordinary
+all-15 median was 247.726 tok/s generation-only, 247.758 tok/s server decode,
+231.862 tok/s stream total, and 95.825 ms TTFT.
+
+All 15 outputs matched the control hashes and passed MSVC C++20 `/W4 /WX`
+compilation and execution. The four-cell warm/cold and long-context matrix also
+compiled and passed. The 135,097-token cold request decoded at 164.965 tok/s.
+The independent entry-sync removal was rejected, as were a 32,768-token prefix,
+depth six, the official external Q4_0 drafter, and Q8_0 six-column MMQ routing.
+
+## 2026-08-03 MSVC AVX2 and 40,960-token draft qualification
+
+A fresh five-seed run reproduced the committed fast-sampling winner at 248.552
+tok/s generation-only, 248.629 tok/s server decode, 232.188 tok/s stream total,
+and 94.996 ms TTFT. The final MSVC build had been taking the scalar fallback
+because this toolchain does not define the GCC-style AVX2 feature macro. A
+runtime CPUID/XGETBV gate restored the AVX2 scan without removing the scalar
+fallback on unsupported hosts.
+
+The draft-only LM-head prefix was then reduced from 65,536 to 40,960 tokens.
+The target verifier and sampler retain the full 248,320-token vocabulary. Three
+five-seed batches measured 267.939, 262.756, and 262.243 tok/s. The ordinary
+all-15 median was 262.756 tok/s generation-only, 262.819 tok/s server decode,
+247.447 tok/s stream total, and 94.575 ms TTFT. This is +15.029 tok/s over the
+previous 247.726 tok/s qualification.
+
+All 15 answers matched the control hashes and passed MSVC C++20 `/W4 /WX`
+compilation and execution. Warm non-streamed, cold streamed, 13,597-token warm
+streamed, and 135,097-token cold non-streamed validation also matched control
+hashes and passed. The near-maximum request decoded at 164.778 tok/s after
+76,966 ms prompt processing. VRAM returned to its pre-run value after every
+run.

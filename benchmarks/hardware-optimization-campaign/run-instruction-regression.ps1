@@ -9,7 +9,13 @@ param(
     [switch]$SkipChatParsing,
     [string]$Engine = '',
     [string]$TargetHotmap = '',
-    [int]$MtpVocab = 40960
+    [int]$MtpVocab = 40960,
+    [double]$DraftPMin = 0.0,
+    [double]$DraftPSplit = 0.0,
+    [int]$Threads = 10,
+    [int]$Poll = 0,
+    [int]$DraftPoll = 0,
+    [switch]$UseHost
 )
 
 Set-StrictMode -Version Latest
@@ -46,16 +52,19 @@ $env:LLAMA_CUDA_GDN_DIRECT_STATE_GATHER = '1'
 
 $args = @(
     '-m', $model, '--jinja', '--spec-type', 'draft-mtp', '--spec-draft-n-max', '5',
-    '--spec-draft-n-min', '0', '--spec-draft-p-min', '0.0', '--spec-draft-p-split', '0.0',
+    '--spec-draft-n-min', '0', '--spec-draft-p-min', "$DraftPMin", '--spec-draft-p-split', "$DraftPSplit",
     '--backend-sampling', '--spec-draft-device', 'CUDA0', '--spec-draft-ngl', 'all',
-    '--spec-draft-threads', '10', '--spec-draft-threads-batch', '10',
+    '--spec-draft-threads', "$Threads", '--spec-draft-threads-batch', "$Threads",
     '--alias', 'qwen3.6-35b-a3b@q3_k_m', '--host', '127.0.0.1', '--port', "$Port",
-    '-ngl', 'all', '-c', '150000', '-b', '2048', '-ub', '512', '-t', '10', '-tb', '10',
-    '--threads-http', '1', '-np', '1', '-fa', 'on', '--no-mmap', '--no-host',
+    '-ngl', 'all', '-c', '150000', '-b', '2048', '-ub', '512', '-t', "$Threads", '-tb', "$Threads",
+    '--threads-http', '1', '-np', '1', '-fa', 'on', '--no-mmap',
     '-ctk', 'f16', '-ctv', 'f16', '--reasoning', 'off', '--reasoning-format', 'none',
     '--temp', '0.6', '--top-k', '20', '--top-p', '0.95', '--min-p', '0.0',
-    '--poll', '0', '--spec-draft-poll', '0', '--no-ui', '--perf'
+    '--poll', "$Poll", '--spec-draft-poll', "$DraftPoll", '--no-ui', '--perf'
 )
+if (-not $UseHost) {
+    $args += '--no-host'
+}
 if ($SkipChatParsing) {
     $args += '--skip-chat-parsing'
 }

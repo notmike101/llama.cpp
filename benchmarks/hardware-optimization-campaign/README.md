@@ -240,3 +240,13 @@ non-streaming requests, 13,597- and 135,097-token occupied contexts, 128- and
 decoding, and llama-bench diagnostics. Structured tool calls remain unsupported
 for this model path: the unused-tool request returned HTTP 500 for a native
 format mismatch, while plain chat passed.
+
+## 2026-08-04 285 tok/s console promotion
+
+K1097 adds an exact-output 128-byte L2 prefetch hint to the fused IQ3_S CUDA
+kernel. On the physical console, the promoted launcher uses eight threads,
+draft p-min 0.16, p-split 0.10, the ranked-1,575 target map, and a 40,192-token
+MTP head. Three retained five-seed launcher batches produced an ordinary
+all-15 generation median of 292.347 tok/s. The sampled quality gate passed
+15/15, and the established cold/warm, long-context, instruction-isolation,
+short-MTP, and raw fallback matrix completed without resident VRAM leakage.

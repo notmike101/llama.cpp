@@ -687,3 +687,33 @@ on this machine show the same directional penalty. Console-session
 qualification is required before treating further absolute 285 tok/s attempts
 as authoritative; transferring the live session would disconnect RDP and is
 not performed without user approval.
+
+## K1159-K1182 - console qualification and K1097 promotion
+
+The authorized transfer from RDP session 2 to the physical console restored
+the expected performance range. The first console runner revision used the
+wrong hotmap environment name, and the next omitted the paired fast-sampler
+switch. Their changed token trajectories and failed warmup made K1159-K1164
+invalid; they are excluded from all promotion statistics.
+
+With both `LLAMA_QWEN35_TARGET_HOTMAP` and
+`LLAMA_SPEC_TARGET_FAST_SAMPLE=1`, K1097 reproduced the established output
+trajectory. Three initial five-seed batches measured 290.568, 288.918, and
+305.656 tok/s, for a 290.568 tok/s ordinary all-15 median. All 15 generated
+programs compiled with MSVC C++20 `/W4 /WX`, ran successfully, and printed
+`All tests passed.`
+
+The cold/warm matrix completed streamed and non-streamed requests plus occupied
+contexts of 13,597 and 135,097 tokens without a memory leak. The medium-context
+answer is byte-identical to the historical K1031 production output. Long
+instruction isolation returned exact `Hello` responses for 6/6 normal and
+parser-bypass requests. Short MTP and raw non-MTP fallback also completed; the
+raw fallback requires MTP-only fast-sampler variables to be unset.
+
+The launcher was aligned with the measured stack by selecting K1097, eight
+threads, p-min 0.16, p-split 0.10, the ranked-1,575 map, host memory, normal
+chat parsing, and polling 50. Unqualified graph optimization, device
+checkpointing, forced HTTP threading, and clock/offset tuning were removed
+from the defaults. Three independently retained launcher batches measured
+283.225, 292.347, and 294.950 tok/s; the ordinary all-15 median was 292.347
+tok/s with exact output trajectories. K1097 is promoted.

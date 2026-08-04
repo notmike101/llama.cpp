@@ -2,7 +2,7 @@
 setlocal EnableExtensions
 
 rem Optimized llama.cpp Qwen MTP build qualified on RTX 3090.
-if not defined LLAMA_SERVER set "LLAMA_SERVER=C:\llama-cpp-src\engines\k514-q8j6-singleworker-inplace\llama-server.exe"
+if not defined LLAMA_SERVER set "LLAMA_SERVER=C:\llama-cpp-src\engines\k1097-k514-exactptx-iq3s-l2prefetch\llama-server.exe"
 if not defined MODEL set "MODEL=C:\llama-cpp-src\Qwen3.6-35B-A3B-MTP-GGUF\Qwen3.6-35B-A3B-UD-Q3_K_M.gguf"
 if not defined HOST set "HOST=0.0.0.0"
 if not defined PORT set "PORT=8080"
@@ -12,13 +12,13 @@ if not defined NGL set "NGL=all"
 if not defined CTX set "CTX=150000"
 if not defined BATCH set "BATCH=2048"
 if not defined UBATCH set "UBATCH=512"
-if not defined THREADS set "THREADS=10"
+if not defined THREADS set "THREADS=8"
 if not defined HTTP_THREADS set "HTTP_THREADS=1"
 if not defined PARALLEL set "PARALLEL=1"
 if not defined EXTRA_ARGS set "EXTRA_ARGS="
-if not defined GPU_CLOCK set "GPU_CLOCK=2190"
+if not defined GPU_CLOCK set "GPU_CLOCK=0"
 if not defined GPU_MEMORY_CLOCK set "GPU_MEMORY_CLOCK=9751"
-if not defined ENABLE_HARDWARE_TUNING set "ENABLE_HARDWARE_TUNING=1"
+if not defined ENABLE_HARDWARE_TUNING set "ENABLE_HARDWARE_TUNING=0"
 if not defined GPU_FAN_MODE set "GPU_FAN_MODE=auto"
 if not defined GPU_FAN set "GPU_FAN=100"
 if not defined GPU_CORE_OFFSET set "GPU_CORE_OFFSET=100000"
@@ -35,22 +35,22 @@ if not defined REASONING set "REASONING=off"
 if not defined REASONING_FORMAT set "REASONING_FORMAT=none"
 if not defined SPEC_DRAFT_N_MAX set "SPEC_DRAFT_N_MAX=5"
 if not defined SPEC_DRAFT_N_MIN set "SPEC_DRAFT_N_MIN=0"
-if not defined SPEC_DRAFT_P_MIN set "SPEC_DRAFT_P_MIN=0.0"
-if not defined SPEC_DRAFT_P_SPLIT set "SPEC_DRAFT_P_SPLIT=0.0"
+if not defined SPEC_DRAFT_P_MIN set "SPEC_DRAFT_P_MIN=0.16"
+if not defined SPEC_DRAFT_P_SPLIT set "SPEC_DRAFT_P_SPLIT=0.10"
 if not defined MTP_DRAFT_VOCAB set "MTP_DRAFT_VOCAB=40192"
 if not defined ENABLE_CONTEXT_SKIP5 set "ENABLE_CONTEXT_SKIP5=0"
 if not defined SPEC_ARGS set "SPEC_ARGS="
 
 set "GGML_CUDA_Q8_SOURCE_REUSE=1"
 set "GGML_CUDA_Q8_PERSISTENT_SOURCE_REUSE=1"
-set "GGML_CUDA_GRAPH_OPT=1"
+set "GGML_CUDA_GRAPH_OPT="
 set "LLAMA_CUDA_SSM_CONV_DIRECT_STATE=1"
 set "LLAMA_CUDA_GDN_PROJECTION_FUSION=1"
 set "LLAMA_CUDA_GDN_DIRECT_STATE_GATHER=1"
-set "LLAMA_SERVER_DEVICE_CHECKPOINT=1"
+set "LLAMA_SERVER_DEVICE_CHECKPOINT=0"
 set "LLAMA_QWEN35_MTP_VOCAB=%MTP_DRAFT_VOCAB%"
 set "LLAMA_SPEC_TARGET_FAST_SAMPLE=1"
-set "LLAMA_QWEN35_TARGET_HOTMAP=C:\llama-cpp-src\benchmarks\hardware-optimization-campaign\qwen36-target-hotmap-ranked-1800.txt"
+set "LLAMA_QWEN35_TARGET_HOTMAP=C:\llama-cpp-src\benchmarks\hardware-optimization-campaign\qwen36-target-hotmap-ranked-1575.txt"
 if "%ENABLE_CONTEXT_SKIP5%"=="1" (
     set "LLAMA_QWEN35_CONTEXT_SKIP5=1"
     set "LLAMA_QWEN35_CONTEXT_SKIP5_MAX=4096"
@@ -109,22 +109,19 @@ if not "%GPU_MEMORY_CLOCK%"=="0" (
     -ub "%UBATCH%" ^
     -t "%THREADS%" ^
     -tb "%THREADS%" ^
-    --threads-http "%HTTP_THREADS%" ^
     -np "%PARALLEL%" ^
     -fa on ^
     --no-mmap ^
-    --no-host ^
     -ctk f16 ^
     -ctv f16 ^
     --reasoning "%REASONING%" ^
     --reasoning-format "%REASONING_FORMAT%" ^
-    --skip-chat-parsing ^
     --temp "%LLAMA_TEMP%" ^
     --top-k "%TOP_K%" ^
     --top-p "%TOP_P%" ^
     --min-p "%MIN_P%" ^
-    --poll 0 ^
-    --spec-draft-poll 0 ^
+    --poll 50 ^
+    --spec-draft-poll 50 ^
     %SPEC_ARGS% ^
     %EXTRA_ARGS%
 

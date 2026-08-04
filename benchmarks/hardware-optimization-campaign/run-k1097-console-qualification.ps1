@@ -6,18 +6,20 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-if ($env:SESSIONNAME -notmatch '^Console$') {
-    throw "Console session required; current session is '$env:SESSIONNAME'"
+$activeSession = (& qwinsta | Where-Object { $_ -match '^>' }) -join ' '
+if ($activeSession -notmatch '^>console\s+') {
+    throw "Console session required; current session is '$activeSession'"
 }
 
 $root = 'C:\llama-cpp-src'
 $runner = Join-Path $root 'benchmarks\hardware-optimization-campaign\run-realworld.ps1'
-$env:LLAMA_QWEN35_MTP_HOTMAP = Join-Path $root 'benchmarks\hardware-optimization-campaign\qwen36-target-hotmap-ranked-1575.txt'
+$env:LLAMA_SPEC_TARGET_FAST_SAMPLE = '1'
+$env:LLAMA_QWEN35_TARGET_HOTMAP = Join-Path $root 'benchmarks\hardware-optimization-campaign\qwen36-target-hotmap-ranked-1575.txt'
 
 $batches = @(
-    [pscustomobject]@{ Id = 'K1159-k1097-console-forward-five'; Seeds = @(101, 202, 303, 404, 505) },
-    [pscustomobject]@{ Id = 'K1160-k1097-console-reverse-five'; Seeds = @(505, 404, 303, 202, 101) },
-    [pscustomobject]@{ Id = 'K1161-k1097-console-repeat-five';  Seeds = @(101, 202, 303, 404, 505) }
+    [pscustomobject]@{ Id = 'K1165-k1097-console-forward-five'; Seeds = @(101, 202, 303, 404, 505) },
+    [pscustomobject]@{ Id = 'K1166-k1097-console-reverse-five'; Seeds = @(505, 404, 303, 202, 101) },
+    [pscustomobject]@{ Id = 'K1167-k1097-console-repeat-five';  Seeds = @(101, 202, 303, 404, 505) }
 )
 
 try {
@@ -37,5 +39,6 @@ try {
 } finally {
     Get-Process -Name 'llama-server' -ErrorAction SilentlyContinue |
         Stop-Process -Force -ErrorAction SilentlyContinue
-    Remove-Item Env:LLAMA_QWEN35_MTP_HOTMAP -ErrorAction SilentlyContinue
+    Remove-Item Env:LLAMA_SPEC_TARGET_FAST_SAMPLE -ErrorAction SilentlyContinue
+    Remove-Item Env:LLAMA_QWEN35_TARGET_HOTMAP -ErrorAction SilentlyContinue
 }

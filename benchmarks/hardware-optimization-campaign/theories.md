@@ -588,3 +588,29 @@ model distribution and already exposed stop failures.
 - Decision: promoted. Identical-seed output lengths matched across the repeats,
   all 10 programs compiled and ran, and the production matrix passed except
   native structured tool formatting, which is unsupported.
+
+## B1040-R1080 - 285 tok/s continuation
+
+The fresh K514 control was 271.394 tok/s. P1045 confirmed the remaining GPU
+costs are Q8 J6 verification at 22.0%, fused IQ3_S at 15.6%, and IQ4_XS at
+11.2%; CUDA API time remains 63.2% stream synchronization.
+
+Draft p-min 0.15 is a real scheduling win. K517 crossed 285 in forward and
+reverse batches, but seed 404 generated `#include <c++20>` and failed the
+warning-clean compilation gate, so the arm is rejected. The numerically safer
+K514 path peaked at 284.184 tok/s with eight workers, p-min 0.15, p-split 0.10,
+and the ranked 1,600-token map. Seven, nine, and twelve threads, mixed draft
+threads, affinity, process priority, fixed clocks, smaller maps, Q8 KV, larger
+microbatch, and MTP depth four or six all lost or changed trajectories.
+
+The 285 target remains active. The next discriminating work is an exact Q8 J6
+or IQ4_XS kernel improvement on K514; configuration-only tuning is exhausted.
+
+P1084 resource inspection found 80 registers per thread and 1,536 bytes of
+shared memory for the non-fused Q8 J6 kernel. A narrowly scoped 64-register
+launch-bounds build produced the intended cubin resource limit, but the CUDA
+transplant changed the sampled trajectories and reached only 282.576 tok/s in
+the three-seed screen. It was reverted. No-host, zero polling, high priority,
+skip-chat-parsing, and an exact five-seed repeat also failed to improve the
+quality-safe result. The 284.184 tok/s observation remains the safe ceiling,
+not a qualified 285 tok/s result.

@@ -29,6 +29,8 @@ param(
     [ValidateRange(0, 248320)][int]$MtpVocab = 0,
     [switch]$NoHost,
     [ValidateRange(0, 4096)][int]$CacheReuse = 0,
+    [ValidateSet('Normal', 'AboveNormal', 'High')][string]$Priority = 'Normal',
+    [UInt64]$AffinityMask = 0,
     [string[]]$ExtraArgs = @()
 )
 
@@ -159,6 +161,8 @@ $args = @(
 $before = [int](& nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits)
 $process = Start-Process -FilePath $Engine -ArgumentList $args -RedirectStandardOutput $serverOut -RedirectStandardError $serverLog -PassThru -WindowStyle Hidden
 try {
+    if ($Priority -ne 'Normal') { $process.PriorityClass = $Priority }
+    if ($AffinityMask -ne 0) { $process.ProcessorAffinity = [IntPtr]$AffinityMask }
     $ready = $false
     for ($i = 0; $i -lt 240; ++$i) {
         if ($process.HasExited) { throw "Server exited with code $($process.ExitCode)" }

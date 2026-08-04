@@ -57,7 +57,7 @@ if "%ENABLE_HARDWARE_TUNING%"=="1" (
     tasklist /FI "IMAGENAME eq MSIAfterburner.exe" 2>nul | find /I "MSIAfterburner.exe" >nul
     if errorlevel 1 (
         start "" /min "%MSI_AFTERBURNER%"
-        timeout /t 2 /nobreak >nul
+        timeout /t 5 /nobreak >nul
         set "AB_STARTED=1"
     )
     "%MACM_CONTROL%" "%GPU_FAN%" 0 "%GPU_CORE_OFFSET%" 0 >nul
@@ -127,6 +127,9 @@ set "SERVER_EXIT=%ERRORLEVEL%"
 :clock_cleanup
 if not "%GPU_CLOCK%"=="0" nvidia-smi -rgc >nul
 if not "%GPU_MEMORY_CLOCK%"=="0" nvidia-smi -rmc >nul
-if "%HARDWARE_TUNED%"=="1" "%MACM_CONTROL%" 0 1 0 0 >nul
+if "%HARDWARE_TUNED%"=="1" (
+    "%MACM_CONTROL%" 0 1 0 0 >nul
+    if "%AB_STARTED%"=="1" timeout /t 3 /nobreak >nul
+)
 if "%AB_STARTED%"=="1" taskkill /IM MSIAfterburner.exe /T /F >nul 2>&1
 exit /b %SERVER_EXIT%

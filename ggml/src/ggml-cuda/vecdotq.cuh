@@ -887,9 +887,9 @@ static __device__ __forceinline__ float vec_dot_q4_K_q8_1(
     v[0] = q4[0];
     v[1] = q4[4];
 
-    const uint16_t * scales = (const uint16_t *)bq4_K->scales;
-    uint16_t aux[2];
     const int j = bq8_offset/2;
+    const uint16_t * scales = (const uint16_t *) bq4_K->scales;
+    uint16_t aux[2];
     if (j < 2) {
         aux[0] = scales[j+0] & 0x3f3f;
         aux[1] = scales[j+2] & 0x3f3f;
@@ -897,7 +897,7 @@ static __device__ __forceinline__ float vec_dot_q4_K_q8_1(
         aux[0] = ((scales[j+2] >> 0) & 0x0f0f) | ((scales[j-2] & 0xc0c0) >> 2);
         aux[1] = ((scales[j+2] >> 4) & 0x0f0f) | ((scales[j-0] & 0xc0c0) >> 2);
     }
-    const uint8_t * sc = (const uint8_t *)aux;
+    const uint8_t * sc = (const uint8_t *) aux;
     const uint8_t * m  = sc + 2;
 
     for (int i = 0; i < QR4_K; ++i) {
@@ -1187,6 +1187,55 @@ static __device__ __forceinline__ float vec_dot_iq3_s_q8_1(
 
     const float d = __half2float(bq3->d) * __low2float(bq8_1[iqs/2].ds);
     return d * sumi;
+}
+
+static __device__ __forceinline__ void vec_dot_iq3_s_q8_1_dual(
+        const void * __restrict__ vbq0, const void * __restrict__ vbq1,
+        const block_q8_1 * __restrict__ bq8_1, const int & kbx, const int & iqs,
+        float & result0, float & result1) {
+    const block_iq3_s * bq30 = (const block_iq3_s *) vbq0 + kbx;
+    const block_iq3_s * bq31 = (const block_iq3_s *) vbq1 + kbx;
+
+    const int2 qs_packed0 = make_int2(get_int_b2(bq30->qs, iqs + 0), get_int_b2(bq30->qs, iqs + 1));
+    const int2 qs_packed1 = make_int2(get_int_b2(bq31->qs, iqs + 0), get_int_b2(bq31->qs, iqs + 1));
+    const uint8_t * qs0 = (const uint8_t *) &qs_packed0;
+    const uint8_t * qs1 = (const uint8_t *) &qs_packed1;
+    const int qh0 = bq30->qh[iqs/2];
+    const int qh1 = bq31->qh[iqs/2];
+    const int signs32_0 = get_int_b2(bq30->signs, iqs/2);
+    const int signs32_1 = get_int_b2(bq31->signs, iqs/2);
+    const uint8_t * signs0 = (const uint8_t *) &signs32_0;
+    const uint8_t * signs1 = (const uint8_t *) &signs32_1;
+
+    int sumi0 = 0;
+    int sumi1 = 0;
+#pragma unroll
+    for (int l0 = 0; l0 < 8; l0 += 2) {
+        const int2 grid0 = make_int2(
+            iq3s_grid[qs0[l0 + 0] | ((qh0 << (8 - l0)) & 0x100)],
+            iq3s_grid[qs0[l0 + 1] | ((qh0 << (7 - l0)) & 0x100)]);
+        const int2 grid1 = make_int2(
+            iq3s_grid[qs1[l0 + 0] | ((qh1 << (8 - l0)) & 0x100)],
+            iq3s_grid[qs1[l0 + 1] | ((qh1 << (7 - l0)) & 0x100)]);
+
+        const int sign00 = __vcmpne4(((signs0[l0/2] & 0x03) << 7) | ((signs0[l0/2] & 0x0C) << 21), 0);
+        const int sign01 = __vcmpne4(((signs0[l0/2] & 0x30) << 3) | ((signs0[l0/2] & 0xC0) << 17), 0);
+        const int sign10 = __vcmpne4(((signs1[l0/2] & 0x03) << 7) | ((signs1[l0/2] & 0x0C) << 21), 0);
+        const int sign11 = __vcmpne4(((signs1[l0/2] & 0x30) << 3) | ((signs1[l0/2] & 0xC0) << 17), 0);
+        const int u0 = get_int_b4(bq8_1[iqs/2].qs, l0 + 0);
+        const int u1 = get_int_b4(bq8_1[iqs/2].qs, l0 + 1);
+
+        sumi0 = ggml_cuda_dp4a(__vsub4(grid0.x ^ sign00, sign00), u0, sumi0);
+        sumi0 = ggml_cuda_dp4a(__vsub4(grid0.y ^ sign01, sign01), u1, sumi0);
+        sumi1 = ggml_cuda_dp4a(__vsub4(grid1.x ^ sign10, sign10), u0, sumi1);
+        sumi1 = ggml_cuda_dp4a(__vsub4(grid1.y ^ sign11, sign11), u1, sumi1);
+    }
+
+    sumi0 *= 1 + 2*((bq30->scales[iqs/4] >> ((iqs << 1) & 0x04)) & 0x0F);
+    sumi1 *= 1 + 2*((bq31->scales[iqs/4] >> ((iqs << 1) & 0x04)) & 0x0F);
+    const float dy = __low2float(bq8_1[iqs/2].ds);
+    result0 = (__half2float(bq30->d) * dy) * sumi0;
+    result1 = (__half2float(bq31->d) * dy) * sumi1;
 }
 
 #define VDR_IQ1_S_Q8_1_MMVQ 1

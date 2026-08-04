@@ -57,6 +57,88 @@ static __global__ void ssm_conv_f32(const float * src0_ptr, const float * src1_p
     }
 }
 
+template <bool apply_silu, size_t d_conv>
+static __global__ void ssm_conv_direct_state_f32(
+        float * states, const float * weights, const float * tokens, const int32_t * state_indices,
+        float * dst, const int64_t state_stride, const int64_t token_nb0, const int64_t token_nb1,
+        const int64_t weight_stride, const int64_t dst_stride, const int64_t n_channels,
+        const int64_t n_t, const int32_t mem_size, const int32_t head, const int32_t n_slots,
+        const int32_t state_zero) {
+    const int64_t channel = (int64_t) blockIdx.x * blockDim.x + threadIdx.x;
+    if (channel >= n_channels) {
+        return;
+    }
+
+    constexpr int state_len = d_conv - 1;
+    float window[state_len + 32];
+    float weight[d_conv];
+
+    const int32_t source = state_indices[0];
+    const float * state_in = states + (int64_t) source * state_stride + channel * state_len;
+#pragma unroll
+    for (int j = 0; j < state_len; ++j) {
+        window[j] = source == state_zero ? 0.0f : state_in[j];
+    }
+    if (state_zero >= 0 && source != state_zero) {
+        float * zero_out = states + (int64_t) state_zero * state_stride + channel * state_len;
+#pragma unroll
+        for (int j = 0; j < state_len; ++j) {
+            zero_out[j] = 0.0f;
+        }
+    }
+#pragma unroll
+    for (int j = 0; j < d_conv; ++j) {
+        weight[j] = weights[channel * weight_stride + j];
+    }
+    for (int64_t i = 0; i < n_t; ++i) {
+        window[state_len + i] = *(const float *) ((const char *) tokens + i * token_nb0 + channel * token_nb1);
+    }
+
+    for (int64_t i = 0; i < n_t; ++i) {
+        float sum = 0.0f;
+#pragma unroll
+        for (int j = 0; j < d_conv; ++j) {
+            sum += window[i + j] * weight[j];
+        }
+        dst[i * dst_stride + channel] = apply_silu ? ggml_cuda_op_silu_single(sum) : sum;
+    }
+
+    for (int32_t t = 1; t <= n_slots; ++t) {
+        const int64_t candidate = n_t - n_slots + t;
+        const int64_t start = candidate > 0 ? candidate : 0;
+        float * state_out = states + ((int64_t) (n_slots - t) * mem_size + head) * state_stride + channel * state_len;
+#pragma unroll
+        for (int j = 0; j < state_len; ++j) {
+            state_out[j] = window[start + j];
+        }
+    }
+}
+
+template <bool apply_silu>
+static void ssm_conv_direct_state_cuda(
+        float * states, const float * weights, const float * tokens, const int32_t * state_indices,
+        float * dst, const int64_t state_stride, const int64_t token_nb0, const int64_t token_nb1,
+        const int64_t weight_stride, const int64_t dst_stride, const int64_t n_channels,
+        const int64_t n_t, const int64_t d_conv, const int32_t mem_size, const int32_t head,
+        const int32_t n_slots, const int32_t state_zero, cudaStream_t stream) {
+    const int threads = 128;
+    const int blocks = (n_channels + threads - 1) / threads;
+    auto launch = [&](auto NC) {
+        constexpr int kNC = decltype(NC)::value;
+        ssm_conv_direct_state_f32<apply_silu, kNC><<<blocks, threads, 0, stream>>>(
+            states, weights, tokens, state_indices, dst, state_stride, token_nb0, token_nb1,
+            weight_stride, dst_stride, n_channels, n_t, mem_size, head, n_slots, state_zero);
+    };
+    switch (d_conv) {
+        case 3:  launch(std::integral_constant<int, 3 >{}); break;
+        case 4:  launch(std::integral_constant<int, 4 >{}); break;
+        case 5:  launch(std::integral_constant<int, 5 >{}); break;
+        case 9:  launch(std::integral_constant<int, 9 >{}); break;
+        case 15: launch(std::integral_constant<int, 15>{}); break;
+        default: GGML_ABORT("Only support kernel sizes 3, 4, 5, 9, 15 right now.");
+    }
+}
+
 template <bool apply_silu, size_t split_d_inner, size_t d_conv, int64_t split_n_t>
 static __global__ void ssm_conv_long_token_f32(const float * __restrict__ src0, const float * __restrict__ src1,
                                                const float * __restrict__ bias,
@@ -171,6 +253,34 @@ void ggml_cuda_op_ssm_conv(ggml_backend_cuda_context & ctx, ggml_tensor * dst, g
 
     // When fusing, write to silu_dst (the node downstream references).
     const struct ggml_tensor * out = fuse_silu ? silu_dst : dst;
+
+    if (dst->src[2] != nullptr) {
+        const struct ggml_tensor * tokens = dst->src[2];
+        const struct ggml_tensor * state_indices = dst->src[3];
+        int32_t params[4];
+        memcpy(params, dst->op_params, sizeof(params));
+        GGML_ASSERT(src0->type == GGML_TYPE_F32);
+        GGML_ASSERT(src1->type == GGML_TYPE_F32);
+        GGML_ASSERT(tokens->type == GGML_TYPE_F32);
+        GGML_ASSERT(state_indices->type == GGML_TYPE_I32);
+        GGML_ASSERT(out->type == GGML_TYPE_F32);
+        GGML_ASSERT(out->ne[2] == 1);
+        GGML_ASSERT(out->ne[1] <= 32);
+        if (fuse_silu) {
+            ssm_conv_direct_state_cuda<true>(
+                (float *) src0->data, (const float *) src1->data, (const float *) tokens->data,
+                (const int32_t *) state_indices->data, (float *) out->data, src0->nb[1] / sizeof(float),
+                tokens->nb[0], tokens->nb[1], src1->nb[1] / sizeof(float), out->nb[1] / sizeof(float),
+                out->ne[0], out->ne[1], src1->ne[0], params[0], params[1], params[2], params[3], ctx.stream());
+        } else {
+            ssm_conv_direct_state_cuda<false>(
+                (float *) src0->data, (const float *) src1->data, (const float *) tokens->data,
+                (const int32_t *) state_indices->data, (float *) out->data, src0->nb[1] / sizeof(float),
+                tokens->nb[0], tokens->nb[1], src1->nb[1] / sizeof(float), out->nb[1] / sizeof(float),
+                out->ne[0], out->ne[1], src1->ne[0], params[0], params[1], params[2], params[3], ctx.stream());
+        }
+        return;
+    }
 
     const int64_t nc  = src1->ne[0];                // d_conv
     const int64_t nr  = src0->ne[1];                // d_inner

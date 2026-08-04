@@ -1454,6 +1454,33 @@ struct ggml_backend_cuda_context {
     }
 #endif // USE_CUDA_GRAPH
 
+    struct q8_source_reuse_state {
+        const ggml_tensor * source = nullptr;
+        ggml_cuda_pool * pool = nullptr;
+        void * data = nullptr;
+        size_t actual_size = 0;
+        size_t requested_size = 0;
+        int stream_no = 0;
+    } q8_source_reuse;
+
+    void release_q8_source_reuse() {
+        if (q8_source_reuse.data != nullptr) {
+            q8_source_reuse.pool->free(q8_source_reuse.data, q8_source_reuse.actual_size);
+            q8_source_reuse = {};
+        }
+    }
+
+    void prepare_q8_source_reuse(const ggml_tensor * node) {
+        if (q8_source_reuse.data == nullptr) {
+            return;
+        }
+        const ggml_tensor * source =
+            (node->op == GGML_OP_MUL_MAT || node->op == GGML_OP_MUL_MAT_ID) ? node->src[1] : nullptr;
+        if (source != q8_source_reuse.source || curr_stream_no != q8_source_reuse.stream_no) {
+            release_q8_source_reuse();
+        }
+    }
+
     explicit ggml_backend_cuda_context(int device) :
         device(device),
         name(GGML_CUDA_NAME + std::to_string(device)) {
@@ -1512,6 +1539,7 @@ struct ggml_cuda_mm_fusion_args_host {
     const ggml_tensor * x_scale = nullptr;
     const ggml_tensor * gate_scale = nullptr;
     ggml_glu_op glu_op;
+    bool unary_sigmoid = false;
 };
 struct ggml_cuda_mm_fusion_args_device {
     const void * x_bias = nullptr;
@@ -1520,6 +1548,7 @@ struct ggml_cuda_mm_fusion_args_device {
     const void * x_scale = nullptr;
     const void * gate_scale = nullptr;
     ggml_glu_op glu_op;
+    bool unary_sigmoid = false;
 };
 
 struct ggml_cuda_kernel_launch_params {

@@ -1475,15 +1475,7 @@ int llama_context::encode(const llama_batch & batch_inp) {
         GGML_ASSERT(backend_res != nullptr);
         GGML_ASSERT(logits.data != nullptr);
 
-        const size_t n_logits = t_logits->ne[0];
-        if (n_logits == n_vocab) {
-            ggml_backend_tensor_get_async(backend_res, t_logits, logits.data, 0, n_tokens*n_vocab*sizeof(float));
-        } else {
-            for (uint32_t i = 0; i < n_tokens; ++i) {
-                ggml_backend_tensor_get_async(backend_res, t_logits, logits.data + i*n_vocab,
-                        i*n_logits*sizeof(float), n_logits*sizeof(float));
-            }
-        }
+        ggml_backend_tensor_get_async(backend_res, t_logits, logits.data, 0, n_tokens*n_vocab*sizeof(float));
     }
 
     // extract embeddings
@@ -1922,15 +1914,7 @@ int llama_context::decode(const llama_batch & batch_inp) {
             if (n_outputs) {
                 GGML_ASSERT( n_outputs_prev + n_outputs <= n_outputs_all);
                 GGML_ASSERT((n_outputs_prev + n_outputs)*n_vocab <= (int64_t) logits.size);
-                const size_t n_logits = t_logits->ne[0];
-                if (n_logits == n_vocab) {
-                    ggml_backend_tensor_get_async(backend_res, t_logits, logits_out, 0, n_outputs*n_vocab*sizeof(float));
-                } else {
-                    for (uint32_t i = 0; i < n_outputs; ++i) {
-                        ggml_backend_tensor_get_async(backend_res, t_logits, logits_out + i*n_vocab,
-                                i*n_logits*sizeof(float), n_logits*sizeof(float));
-                    }
-                }
+                ggml_backend_tensor_get_async(backend_res, t_logits, logits_out, 0, n_outputs*n_vocab*sizeof(float));
             }
         }
 
@@ -3718,6 +3702,16 @@ float * llama_get_logits_ith(llama_context * ctx, int32_t i) {
     return res;
 }
 
+float * llama_get_logits_ith_nosync(llama_context * ctx, int32_t i) {
+    float * res = ctx->get_sampled_logits_ith(i);
+
+    if (!res) {
+        res = ctx->get_logits_ith(i);
+    }
+
+    return res;
+}
+
 float * llama_get_embeddings(llama_context * ctx) {
     ctx->synchronize();
 
@@ -3768,6 +3762,10 @@ float * llama_get_embeddings_nextn_ith(llama_context * ctx, int32_t i) {
     return ctx->get_embeddings_nextn_ith(i);
 }
 
+float * llama_get_embeddings_nextn_ith_nosync(llama_context * ctx, int32_t i) {
+    return ctx->get_embeddings_nextn_ith(i);
+}
+
 float * llama_get_embeddings_layer_inp(llama_context * ctx, uint32_t lid) {
     ctx->synchronize();
 
@@ -3784,9 +3782,17 @@ llama_token llama_get_sampled_token_ith(llama_context * ctx, int32_t i) {
     return ctx->get_sampled_token_ith(i);
 }
 
+llama_token llama_get_sampled_token_ith_nosync(llama_context * ctx, int32_t i) {
+    return ctx->get_sampled_token_ith(i);
+}
+
 float * llama_get_sampled_probs_ith(llama_context * ctx, int32_t i) {
     ctx->synchronize();
 
+    return ctx->get_sampled_probs_ith(i);
+}
+
+float * llama_get_sampled_probs_ith_nosync(llama_context * ctx, int32_t i) {
     return ctx->get_sampled_probs_ith(i);
 }
 
@@ -3796,9 +3802,17 @@ float * llama_get_sampled_logits_ith(llama_context * ctx, int32_t i) {
     return ctx->get_sampled_logits_ith(i);
 }
 
+float * llama_get_sampled_logits_ith_nosync(llama_context * ctx, int32_t i) {
+    return ctx->get_sampled_logits_ith(i);
+}
+
 llama_token * llama_get_sampled_candidates_ith(llama_context * ctx, int32_t i) {
     ctx->synchronize();
 
+    return const_cast<llama_token *>(ctx->get_sampled_candidates_ith(i));
+}
+
+llama_token * llama_get_sampled_candidates_ith_nosync(llama_context * ctx, int32_t i) {
     return const_cast<llama_token *>(ctx->get_sampled_candidates_ith(i));
 }
 
@@ -3808,15 +3822,27 @@ uint32_t llama_get_sampled_candidates_count_ith(llama_context * ctx, int32_t i) 
     return static_cast<uint32_t>(ctx->get_sampled_candidates_count(i));
 }
 
+uint32_t llama_get_sampled_candidates_count_ith_nosync(llama_context * ctx, int32_t i) {
+    return static_cast<uint32_t>(ctx->get_sampled_candidates_count(i));
+}
+
 uint32_t llama_get_sampled_logits_count_ith(llama_context * ctx, int32_t i) {
     ctx->synchronize();
 
     return static_cast<uint32_t>(ctx->get_sampled_logits_count(i));
 }
 
+uint32_t llama_get_sampled_logits_count_ith_nosync(llama_context * ctx, int32_t i) {
+    return static_cast<uint32_t>(ctx->get_sampled_logits_count(i));
+}
+
 uint32_t llama_get_sampled_probs_count_ith(llama_context * ctx, int32_t i) {
     ctx->synchronize();
 
+    return static_cast<uint32_t>(ctx->get_sampled_probs_count(i));
+}
+
+uint32_t llama_get_sampled_probs_count_ith_nosync(llama_context * ctx, int32_t i) {
     return static_cast<uint32_t>(ctx->get_sampled_probs_count(i));
 }
 

@@ -85,10 +85,10 @@ static llama_token try_draft(common_ngram_cache & nc_static, const common_ngram 
         sum_count_static += count_static;
     }
 
-    if (sum_count_static < draft_min_sample_size_lax[LLAMA_NGRAM_STATIC-1]) {
+    if (sum_count_static < draft_min_sample_size_strict[LLAMA_NGRAM_STATIC-1]) {
         return LLAMA_TOKEN_NULL;
     }
-    if (100*max_count_static < draft_min_percent_lax[LLAMA_NGRAM_STATIC-1]*sum_count_static) {
+    if (max_count_static != sum_count_static) {
         return LLAMA_TOKEN_NULL;
     }
     return max_token;

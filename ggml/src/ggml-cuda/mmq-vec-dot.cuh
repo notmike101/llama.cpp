@@ -394,7 +394,14 @@ template <ggml_type type, int J, bool fallback> static __device__ __forceinline_
         for (int k01 = 0; k01 < MMQ_TILE_NE_K; k01 += QI8_1) {
             const int k0 = k00 + k01;
 
-            load_ldmatrix(A[n][k01/QI8_1], x_qs + (i0 + n*tile_A::I)*sram_stride + k0, sram_stride);
+#if defined(TURING_MMA_AVAILABLE)
+            const int k0_x = (type == GGML_TYPE_Q4_K || type == GGML_TYPE_Q5_K) &&
+                    J == 16 && !fallback ?
+                8*(k0/16) + 32*((k0/8) % 2) : k0;
+#else
+            const int k0_x = k0;
+#endif
+            load_ldmatrix(A[n][k01/QI8_1], x_qs + (i0 + n*tile_A::I)*sram_stride + k0_x, sram_stride);
         }
 
 #pragma unroll
@@ -1099,9 +1106,12 @@ template <ggml_type type, int J, bool fallback> static __device__ __forceinline_
 #pragma unroll
         for (int k01 = 0; k01 < MMQ_TILE_NE_K; k01 += 8) {
             const int k0 = k00 + k01;
+            const int k0_block = k0/16;
+            const int k0_x = J == 16 && !fallback ?
+                k0 % 16 + 16*((k0_block >> 1) | ((k0_block & 1) << 1)) : k0;
 
-            load_ldmatrix(A[n][k01/4 + 0], x_qs + (i0 + n*tile_A::I)*sram_stride + (k0 + 0),         sram_stride);
-            load_ldmatrix(A[n][k01/4 + 1], x_qs + (i0 + n*tile_A::I)*sram_stride + (k0 + tile_A::J), sram_stride);
+            load_ldmatrix(A[n][k01/4 + 0], x_qs + (i0 + n*tile_A::I)*sram_stride + (k0_x + 0),         sram_stride);
+            load_ldmatrix(A[n][k01/4 + 1], x_qs + (i0 + n*tile_A::I)*sram_stride + (k0_x + tile_A::J), sram_stride);
         }
 
 #pragma unroll

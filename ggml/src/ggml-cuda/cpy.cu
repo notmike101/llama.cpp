@@ -11,6 +11,11 @@ const int CUDA_CPY_TILE_DIM_2D = 32; // 2D tile dimension for transposed blocks
 const int CUDA_CPY_BLOCK_NM = 8;     // block size of 3rd dimension if available
 const int CUDA_CPY_BLOCK_ROWS = 8;   // block dimension for marching through rows
 
+static __device__ int          cpy_rollback_phase[512];
+static __device__ const char * cpy_rollback_src[8];
+static __device__ char *       cpy_rollback_dst[8];
+static __device__ int64_t      cpy_rollback_src_stride[8];
+
 template <cpy_kernel_t cpy_1>
 static __global__ void cpy_scalar(const char * cx, char * cdst, const int64_t ne,
                                   const int64_t ne00, const int64_t ne01, const int64_t ne02, const int64_t nb00, const int64_t nb01, const int64_t nb02,
@@ -20,6 +25,63 @@ static __global__ void cpy_scalar(const char * cx, char * cdst, const int64_t ne
     const int64_t i = (int64_t)blockDim.x*blockIdx.x + threadIdx.x;
 
     if (i >= ne) {
+        return;
+    }
+
+    if (ne == 30720 && ne00 == 3 && ne01 == 10240 && ne02 == 1 &&
+            ne10 == 30720 && ne11 == 1 && ne12 == 1 &&
+            nb00 == 4 && nb01 >= 16 && nb01 <= 48 && nb01 % 4 == 0 && nb10 == 4 &&
+            blockDim.x == 64 && gridDim.x == 480) {
+        ggml_cuda_pdl_sync();
+        __shared__ int phase;
+        if (threadIdx.x == 0) {
+            phase = cpy_rollback_phase[blockIdx.x];
+            cpy_rollback_phase[blockIdx.x] = phase == 8 ? 0 : phase + 1;
+            if (blockIdx.x == 0 && phase < 8) {
+                cpy_rollback_src[phase] = cx;
+                cpy_rollback_dst[phase] = cdst;
+                cpy_rollback_src_stride[phase] = nb01;
+            }
+        }
+        __syncthreads();
+
+        if (phase != 8) {
+            return;
+        }
+
+        const int64_t channel0 = 2 * i;
+        if (channel0 >= ne / 3) {
+            return;
+        }
+
+        const char * previous_src = nullptr;
+        float value0 = 0.0f;
+        float value1 = 0.0f;
+        float value2 = 0.0f;
+        float value3 = 0.0f;
+        float value4 = 0.0f;
+        float value5 = 0.0f;
+#pragma unroll
+        for (int slot = 0; slot < 9; ++slot) {
+            const char * slot_src = slot < 8 ? cpy_rollback_src[slot] : cx;
+            char * slot_dst = slot < 8 ? cpy_rollback_dst[slot] : cdst;
+            const int64_t slot_stride = slot < 8 ? cpy_rollback_src_stride[slot] : nb01;
+            const char * channel_src = slot_src + channel0 * slot_stride;
+            if (channel_src != previous_src) {
+                const char * channel_src1 = channel_src + slot_stride;
+                value0 = *(const float *) (channel_src + 0 * nb00);
+                value1 = *(const float *) (channel_src + 1 * nb00);
+                value2 = *(const float *) (channel_src + 2 * nb00);
+                value3 = *(const float *) (channel_src1 + 0 * nb00);
+                value4 = *(const float *) (channel_src1 + 1 * nb00);
+                value5 = *(const float *) (channel_src1 + 2 * nb00);
+                previous_src = channel_src;
+            }
+            float2 * channel_dst = (float2 *) (slot_dst + 3 * channel0 * nb10);
+            channel_dst[0] = make_float2(value0, value1);
+            channel_dst[1] = make_float2(value2, value3);
+            channel_dst[2] = make_float2(value4, value5);
+        }
         return;
     }
 
@@ -39,6 +101,26 @@ static __global__ void cpy_scalar(const char * cx, char * cdst, const int64_t ne
 
     ggml_cuda_pdl_sync();
     cpy_1(cx + x_offset, cdst + dst_offset);
+}
+
+template <int width, int slots>
+static __global__ void cpy_f32_rollback(const char * src, char * dst,
+        int64_t channels, int64_t src_channel_stride,
+        int repeated_src0, int64_t dst_slot_stride) {
+    const int64_t element = (int64_t) blockDim.x * blockIdx.x + threadIdx.x;
+    if (element >= channels * width) {
+        return;
+    }
+
+    const int64_t channel = element / width;
+    const int64_t lane = element - channel * width;
+    const char * src_channel = src + channel * src_channel_stride;
+#pragma unroll
+    for (int slot = 0; slot < slots; ++slot) {
+        const int src_step = slot < repeated_src0 ? 0 : slot - repeated_src0 + 1;
+        float * dst_slot = (float *) (dst + slot * dst_slot_stride);
+        dst_slot[element] = ((const float *) src_channel)[src_step + lane];
+    }
 }
 
 template <typename T>
@@ -424,6 +506,23 @@ static bool ggml_cuda_cpy_as_memcpy_2d(const ggml_tensor * src0, const ggml_tens
     dpitch = src1->nb[d];
 
     return spitch >= width && dpitch >= width;
+}
+
+void ggml_cuda_cpy_f32_rollback(ggml_backend_cuda_context & ctx,
+        const ggml_tensor * src0, ggml_tensor * dst0,
+        int slots, int repeated_src0, int64_t dst_slot_stride) {
+    GGML_ASSERT(src0->type == GGML_TYPE_F32 && dst0->type == GGML_TYPE_F32);
+    GGML_ASSERT(src0->ne[0] == 3 && src0->ne[2] == 1 && src0->ne[3] == 1);
+    GGML_ASSERT(slots == 9 && repeated_src0 >= 1 && repeated_src0 <= slots);
+
+    constexpr int block_size = 128;
+    const int64_t channels = src0->ne[1];
+    const int64_t blocks = (channels * src0->ne[0] + block_size - 1) / block_size;
+    const ggml_cuda_kernel_launch_params launch_params =
+        ggml_cuda_kernel_launch_params((dim3) blocks, block_size, 0, ctx.stream());
+    ggml_cuda_kernel_launch(cpy_f32_rollback<3, 9>, launch_params,
+        (const char *) src0->data, (char *) dst0->data,
+        channels, (int64_t) src0->nb[1], repeated_src0, dst_slot_stride);
 }
 
 void ggml_cuda_cpy(ggml_backend_cuda_context & ctx, const ggml_tensor * src0, ggml_tensor * src1) {

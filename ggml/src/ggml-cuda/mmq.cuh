@@ -1336,7 +1336,10 @@ static void launch_mul_mat_q(ggml_backend_cuda_context & ctx, const mmq_args & a
     const int ntiles_dst = ntx * nty * ntzw;
     const int tiles_nwaves = (ntiles_dst + nsm - 1) / nsm;
     const int tiles_efficiency_percent = 100 * ntiles_dst / (nsm*tiles_nwaves);
-    const dim3 block_nums_stream_k(GGML_CUDA_CC_IS_NVIDIA(cc) && tiles_efficiency_percent >= 90 ? ntiles_dst : nsm, 1, 1);
+    const int tiles_efficiency_threshold = type == GGML_TYPE_Q4_K && J == 16 && !fallback ? 50 : 90;
+    const dim3 block_nums_stream_k(
+        GGML_CUDA_CC_IS_NVIDIA(cc) && tiles_efficiency_percent >= tiles_efficiency_threshold ?
+            ntiles_dst : nsm, 1, 1);
 
     GGML_ASSERT(ntiles_dst * blocks_per_ne00_fd.z < (1 << 30)); // Assert that variable kbc will not overflow.
 

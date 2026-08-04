@@ -116,6 +116,10 @@ add_library(${TARGET}
     jinja/caps.h
     )
 
+if (MSVC)
+    set_source_files_properties(sampling.cpp PROPERTIES COMPILE_OPTIONS "/arch:AVX2")
+endif()
+
 set_target_properties(${TARGET} PROPERTIES
     VERSION ${LLAMA_INSTALL_VERSION}
     SOVERSION 0

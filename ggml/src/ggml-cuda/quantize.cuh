@@ -5,7 +5,7 @@
 
 #include <cstdint>
 
-#define CUDA_QUANTIZE_BLOCK_SIZE     256
+#define CUDA_QUANTIZE_BLOCK_SIZE    128
 #define CUDA_QUANTIZE_BLOCK_SIZE_MMQ 128
 
 static_assert(MATRIX_ROW_PADDING %    CUDA_QUANTIZE_BLOCK_SIZE      == 0, "Risk of out-of-bounds access.");

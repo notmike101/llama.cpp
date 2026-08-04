@@ -213,6 +213,38 @@ static __global__ void k_argsort_f32_i32(const float * x, int * dst, const int n
     }
 }
 
+#ifdef GGML_CUDA_USE_CUB
+template<ggml_sort_order order, int block_size, int items_per_thread = 1>
+static __global__ void k_argsort_f32_i32_radix(const float * x, int * dst, const int ncols) {
+    using block_sort = BlockRadixSort<float, block_size, items_per_thread, int>;
+    __shared__ typename block_sort::TempStorage temp;
+
+    const int col = items_per_thread*threadIdx.x;
+    const int row = blockIdx.x;
+    float key[items_per_thread];
+    int index[items_per_thread];
+#pragma unroll
+    for (int i = 0; i < items_per_thread; ++i) {
+        key[i] = col + i < ncols ? x[row*ncols + col + i] :
+            (order == GGML_SORT_ORDER_ASC ? FLT_MAX : -FLT_MAX);
+        index[i] = col + i;
+    }
+
+    if constexpr (order == GGML_SORT_ORDER_ASC) {
+        block_sort(temp).Sort(key, index);
+    } else {
+        block_sort(temp).SortDescending(key, index);
+    }
+
+#pragma unroll
+    for (int i = 0; i < items_per_thread; ++i) {
+        if (col + i < ncols) {
+            dst[row*ncols + col + i] = index[i];
+        }
+    }
+}
+#endif
+
 static int next_power_of_2(int x) {
     int n = 1;
     while (n < x) {
@@ -236,6 +268,25 @@ void argsort_f32_i32_cuda_bitonic(const float *   x,
 
     // FIXME: this limit could be raised by ~2-4x on Ampere or newer
     GGML_ASSERT(shared_mem <= ggml_cuda_info().devices[ggml_cuda_get_device()].smpb);
+
+#ifdef GGML_CUDA_USE_CUB
+    if (ncols_pad == 128 || ncols_pad == 256) {
+        if (order == GGML_SORT_ORDER_ASC) {
+            if (ncols_pad == 128) {
+                k_argsort_f32_i32_radix<GGML_SORT_ORDER_ASC, 128><<<block_nums, 128, 0, stream>>>(x, dst, ncols);
+            } else {
+                k_argsort_f32_i32_radix<GGML_SORT_ORDER_ASC, 64, 4><<<block_nums, 64, 0, stream>>>(x, dst, ncols);
+            }
+        } else {
+            if (ncols_pad == 128) {
+                k_argsort_f32_i32_radix<GGML_SORT_ORDER_DESC, 128><<<block_nums, 128, 0, stream>>>(x, dst, ncols);
+            } else {
+                k_argsort_f32_i32_radix<GGML_SORT_ORDER_DESC, 64, 4><<<block_nums, 64, 0, stream>>>(x, dst, ncols);
+            }
+        }
+        return;
+    }
+#endif
 
     if (order == GGML_SORT_ORDER_ASC) {
         k_argsort_f32_i32<GGML_SORT_ORDER_ASC>

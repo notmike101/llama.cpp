@@ -11,6 +11,7 @@ Read this file before every continuation of this campaign. Preserve superseded f
 - The launcher currently uses content-only chat parsing to contain the PEG-native malformed-output failure. This prevents structured API `tool_calls`; do not claim structured tool support without a separate parser fix and validation.
 - The UI default output cap is 4096. A caller can override it, so natural EOS/stop behavior remains a required test.
 - Use automatic fan control and verify idle clocks, power, temperature, and fan behavior. Stop the exact server PID and verify VRAM and helper-process cleanup after tests.
+- The current Codex session is RDP and cannot change NVIDIA application clocks without elevation. Do not compare its unlocked results with the earlier physical-console qualification. The production launcher also cannot apply its 9751 MHz memory lock from this unelevated session, so current-session controls must remain unlocked and paired.
 
 ## Accumulated mainline improvements
 

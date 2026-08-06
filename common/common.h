@@ -352,6 +352,7 @@ struct common_params_speculative_draft {
 
 struct common_params_speculative_ngram_mod {
     int32_t n_match = 24;
+    int32_t n_prime = 0;
 
     int32_t n_max = 64;
     int32_t n_min = 48;

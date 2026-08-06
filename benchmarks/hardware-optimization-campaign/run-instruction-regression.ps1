@@ -12,10 +12,13 @@ param(
     [int]$MtpVocab = 40960,
     [double]$DraftPMin = 0.0,
     [double]$DraftPSplit = 0.0,
+    [int]$DraftMax = 5,
+    [string]$SpecType = 'draft-mtp',
     [int]$Threads = 10,
     [int]$Poll = 0,
     [int]$DraftPoll = 0,
-    [switch]$UseHost
+    [switch]$UseHost,
+    [string[]]$ExtraArgs = @()
 )
 
 Set-StrictMode -Version Latest
@@ -51,7 +54,7 @@ $env:LLAMA_CUDA_GDN_PROJECTION_FUSION = '1'
 $env:LLAMA_CUDA_GDN_DIRECT_STATE_GATHER = '1'
 
 $args = @(
-    '-m', $model, '--jinja', '--spec-type', 'draft-mtp', '--spec-draft-n-max', '5',
+    '-m', $model, '--jinja', '--spec-type', $SpecType, '--spec-draft-n-max', "$DraftMax",
     '--spec-draft-n-min', '0', '--spec-draft-p-min', "$DraftPMin", '--spec-draft-p-split', "$DraftPSplit",
     '--backend-sampling', '--spec-draft-device', 'CUDA0', '--spec-draft-ngl', 'all',
     '--spec-draft-threads', "$Threads", '--spec-draft-threads-batch', "$Threads",
@@ -68,6 +71,7 @@ if (-not $UseHost) {
 if ($SkipChatParsing) {
     $args += '--skip-chat-parsing'
 }
+$args += $ExtraArgs
 
 $before = [int](& nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits)
 $process = Start-Process -FilePath $engine -ArgumentList $args -RedirectStandardOutput $serverOut `

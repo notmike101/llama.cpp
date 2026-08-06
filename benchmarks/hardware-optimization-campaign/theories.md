@@ -717,3 +717,72 @@ checkpointing, forced HTTP threading, and clock/offset tuning were removed
 from the defaults. Three independently retained launcher batches measured
 283.225, 292.347, and 294.950 tok/s; the ordinary all-15 median was 292.347
 tok/s with exact output trajectories. K1097 is promoted.
+
+## B1183-P1188 - 2026-08-05 matched RDP control and profile
+
+The historical 292.347 tok/s console result is not the current control. Two
+fresh unlocked RDP batches produced server-decode medians of 274.716 and
+273.038 tok/s and stream-total medians of 251.695 and 254.826 tok/s. The
+ordinary combined 10-run medians are 273.877 server decode and 252.220 stream
+total, setting matched +15 thresholds of 288.877 and 267.220 tok/s.
+
+Ranked-1,550 target logits regressed to 269.286 server decode and 250.459
+stream total. CUDA graph optimization regressed to 266.289 and 247.403. Both
+arms preserved the fixed output trajectory but are rejected. The production
+9751 MHz memory lock could not be applied because the current user lacks NVIDIA
+clock-control permission; the helper change used to test it was removed.
+
+Nsight Systems P1188 reproduced the production profile. Q8_0 six-column
+verification rose to 26.0% of CUDA kernel time, fused IQ3_S MoE used 14.3%,
+IQ4_XS MoE used 10.6%, and CUDA API time remained dominated by
+cudaStreamSynchronize at 61.3%. The next source candidate must reduce exact Q8
+J6 verification work or its load dependency without changing sampled output.
+
+K1190 tested one target-context synchronization per speculative acceptance
+batch instead of one synchronization per accepted row. The rebuilt host stack
+with the unchanged K1097 CUDA DLL reached only 257.742 tok/s server decode and
+242.021 tok/s stream total. Seeds 101 and 505 changed output lengths, proving
+that sampler acceptance queues state needed by later rows. The source change
+was removed. Global or batched synchronization elision remains rejected.
+
+K1191 added 128-byte L2 prefetch hints to all 28 noncoherent loads in the exact
+Q8_0 six-column PTX entry. It preserved the reference token counts but reached
+only 271.334 tok/s server decode and 251.478 tok/s stream total in the
+three-seed screen, so the cache hint is rejected. Ranked 1,600 and draft p-min
+0.15 were then retested on the untouched K1097 engine. Their five-seed medians
+were 269.379 and 269.207 tok/s, respectively, and both are rejected.
+
+Separating the Q8_0 loads showed ten 16-bit weight-path loads and eighteen
+32-bit activation-path loads. A weight-only 128-byte hint regressed. The
+64-byte version reached 280.508 tok/s, but the immediately matched untouched
+control was faster at 281.320 tok/s. Changing only activation loads from
+noncoherent to cache-all reached 258.783 tok/s. All three variants preserved
+the fixed token counts and are rejected.
+
+An opt-in adaptive MTP depth prototype lowered the next verification depth
+after poor recent acceptance. Its rebuilt host stack changed all five fixed
+token trajectories and reached 208.657 tok/s. The prototype was removed; the
+fixed depth remains required for the current sampling contract.
+
+The fresh physical-console baseline is 289.427 tok/s server decode and 268.595
+tok/s stream total across paired forward/reverse five-seed runs. A Q8_0 J6
+row-per-warp kernel removed the cross-warp shared-memory reduction and lowered
+average profiled kernel latency from 13.994 us to 12.049 us. Its three-seed
+server median was 287.672 tok/s, so it remains provisional and is not promoted.
+Removing PDL bookkeeping from fused IQ3_S and splitting IQ4_XS eight-row
+accumulators into groups of four both preserved exact outputs but regressed the
+three-seed median. Both stacked variants are rejected.
+
+The first IQ3 PDL and IQ4 split measurements used inherited PTX after a failed
+compiler environment setup and are invalid. A verified rebuild showed the
+IQ4_XS split lowering average kernel latency from 39.322 us to 36.622 us while
+preserving exact output. Stacked with Q8 row-per-warp, its paired ten-run server
+median was 292.208 tok/s and stream total was 267.310 tok/s, still below target.
+Draft p-min 0.15 was the best adjacent three-seed arm at 297.739 tok/s server
+and 274.561 tok/s stream total, but has not cleared the qualification target.
+
+Elevated Nsight Compute profiling of Q8 row-per-warp found 82.28% LSU use,
+72.17% DRAM throughput, 94.52% L1 hit rate, and 65% excessive global sectors.
+An attempted block-scale broadcast failed exact output and was abandoned.
+IQ3 dual-dot, alternate row grouping, sequential gate evaluation, transpose-free
+GEMV, and seven-warp MMF either changed trajectories or regressed.

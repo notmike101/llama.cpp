@@ -601,6 +601,34 @@ static __global__ void mul_mat_vec_q(
     const block_q8_1 * y = ((const block_q8_1 *) vy) + sample_y*stride_sample_y + channel_y*stride_channel_y;
     const int kbx_offset = sample_x*stride_sample_x + channel_x*stride_channel_x + row0*stride_row_x;
 
+    if constexpr (type == GGML_TYPE_Q8_0 && ncols_dst == 6 && !has_fusion) {
+        const int row = threadIdx.y;
+        float row_tmp[ncols_dst] = { 0.0f };
+        constexpr int row_blocks_per_iter = vdr*warp_size / qi;
+        const int row_kbx_offset = kbx_offset + row*stride_row_x;
+
+        for (int kbx = threadIdx.x / (qi/vdr); kbx < blocks_per_row_x; kbx += row_blocks_per_iter) {
+            const int kby = kbx * (qk/QK8_1);
+            const int kqs = vdr * (threadIdx.x % (qi/vdr));
+
+#pragma unroll
+            for (int j = 0; j < ncols_dst; ++j) {
+                row_tmp[j] += vec_dot_q_cuda(
+                    vx, &y[j*stride_col_y + kby], row_kbx_offset + kbx, kqs);
+            }
+        }
+
+        dst += sample_dst*stride_sample_dst + channel_dst*stride_channel_dst + row0;
+#pragma unroll
+        for (int j = 0; j < ncols_dst; ++j) {
+            row_tmp[j] = warp_reduce_sum<warp_size>(row_tmp[j]);
+            if (threadIdx.x == 0 && uint32_t(row0 + row) < nrows_x) {
+                dst[j*stride_col_dst + row] = row_tmp[j];
+            }
+        }
+        return;
+    }
+
     for (int kbx = tid / (qi/vdr); kbx < blocks_per_row_x; kbx += blocks_per_iter) {
         const int kby = kbx * (qk/QK8_1); // y block index that aligns with kbx
 
@@ -756,6 +784,32 @@ static __global__ void mul_mat_vec_q_moe(
 
     const block_q8_1 * y = ((const block_q8_1 *) vy) + channel_y*stride_channel_y + token_idx*stride_col_y;
     const int kbx_offset  = channel_x*stride_channel_x + row0*stride_row_x;
+
+    if constexpr (type == GGML_TYPE_IQ4_XS && c_rows_per_block == 8 && !has_fusion) {
+#pragma unroll
+        for (int group = 0; group < 2; ++group) {
+            float group_tmp[4] = {0.0f};
+            for (int kbx = threadIdx.x / (qi/vdr); kbx < blocks_per_row_x; kbx += blocks_per_iter) {
+                const int kby = kbx * (qk/QK8_1);
+                const int kqs = vdr * (threadIdx.x % (qi/vdr));
+#pragma unroll
+                for (int i = 0; i < 4; ++i) {
+                    group_tmp[i] += vec_dot_q_cuda(
+                        vx, &y[kby], kbx_offset + (4*group + i)*stride_row_x + kbx, kqs);
+                }
+            }
+#pragma unroll
+            for (int i = 0; i < 4; ++i) {
+                group_tmp[i] = warp_reduce_sum<warp_size>(group_tmp[i]);
+            }
+            if (threadIdx.x < 4 && uint32_t(row0 + 4*group + threadIdx.x) < nrows_x) {
+                dst[channel_dst*stride_channel_dst + token_idx*stride_col_dst + row0 + 4*group + threadIdx.x] =
+                    group_tmp[threadIdx.x];
+            }
+        }
+        ggml_cuda_pdl_lc();
+        return;
+    }
 
     float tmp[c_rows_per_block] = {0.0f};
     float tmp_gate[c_rows_per_block] = {0.0f};

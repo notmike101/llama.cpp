@@ -1768,6 +1768,9 @@ struct common_speculative_impl_ngram_mod : public common_speculative_impl {
 
         // consecutive accept rounds with low acceptance fraction (< 0.5)
         int n_low = 0;
+
+        int32_t n_begin = 0;
+        bool enabled = true;
     };
 
     std::vector<seq_info> sinfos;
@@ -1800,6 +1803,7 @@ struct common_speculative_impl_ngram_mod : public common_speculative_impl {
 
         sinfo.i_last = 0;
         sinfo.n_draft_last = 0;
+        sinfo.enabled = sinfo.n_begin++ >= params.n_prime;
 
         const size_t n = mod.get_n();
         if (prompt.size() < n) {
@@ -1847,6 +1851,10 @@ struct common_speculative_impl_ngram_mod : public common_speculative_impl {
             }
 
             sinfo.i_last = cur_len - n;
+        }
+
+        if (!sinfo.enabled) {
+            return;
         }
 
         result.resize(n + params.n_max);

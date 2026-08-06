@@ -15,9 +15,11 @@ param(
     [int]$UBatch = 512,
     [ValidateSet('stream', 'nonstream')][string]$Mode = 'stream',
     [string]$PromptFile = '',
+    [switch]$UniquePrompt,
     [ValidateRange(0, 5000)][int]$ContextRepeat = 0,
     [int]$MaxTokens = 512,
     [switch]$SkipWarmup,
+    [int]$WarmupSeed = 999,
     [ValidateRange(0, 100)][int]$Poll = 50,
     [ValidateRange(0, 100)][int]$DraftPoll = 50,
     [ValidateSet(0, 1)][int]$Q8SourceReuse = 1,
@@ -57,9 +59,10 @@ function Get-Median([double[]]$Values) {
 
 function Invoke-Stream([int]$Seed, [string]$RunDirectory) {
     New-Item -ItemType Directory -Path $RunDirectory -Force | Out-Null
+    $requestPrompt = if ($UniquePrompt) { $prompt + ("`n" * (1 + $Seed % 5)) } else { $prompt }
     $body = [ordered]@{
         model = 'qwen3.6-35b-a3b@q3_k_m'
-        messages = @(@{ role = 'user'; content = $prompt })
+        messages = @(@{ role = 'user'; content = $requestPrompt })
         temperature = 0.6; top_k = 20; top_p = 0.95; min_p = 0.0
         seed = $Seed; max_tokens = $MaxTokens; backend_sampling = $true
         reasoning_format = 'none'; stream = ($Mode -eq 'stream')
@@ -175,9 +178,9 @@ try {
     $aliases = (Invoke-RestMethod "http://127.0.0.1:$Port/v1/models").data.id
     if ($live.ExecutablePath -ne $Engine -or $live.CommandLine.IndexOf($model, [StringComparison]::OrdinalIgnoreCase) -lt 0 -or $aliases -notcontains 'qwen3.6-35b-a3b@q3_k_m') { throw 'Live server identity mismatch' }
     [pscustomobject]@{ pid = $live.ProcessId; executable = $live.ExecutablePath; command_line = $live.CommandLine; executable_sha256 = (Get-FileHash $Engine -Algorithm SHA256).Hash; cuda_sha256 = (Get-FileHash (Join-Path (Split-Path $Engine) 'ggml-cuda.dll') -Algorithm SHA256).Hash; model = $model; model_sha256 = (Get-FileHash $model -Algorithm SHA256).Hash; alias = $aliases; verified = $true } | ConvertTo-Json -Depth 8 | Set-Content (Join-Path $output 'IDENTITY.json')
-    if (-not $SkipWarmup) { Invoke-Stream -Seed 999 -RunDirectory (Join-Path $output 'WARMUP') | ConvertTo-Json | Set-Content (Join-Path $output 'WARMUP.json') }
+    if (-not $SkipWarmup) { Invoke-Stream -Seed $WarmupSeed -RunDirectory (Join-Path $output 'WARMUP') | ConvertTo-Json | Set-Content (Join-Path $output 'WARMUP.json') }
     $rows = @($Seeds | ForEach-Object { Invoke-Stream -Seed $_ -RunDirectory (Join-Path $output "seed-$_") })
-    $summary = [ordered]@{ mode = $Mode; warmup = -not $SkipWarmup; prompt_file = $PromptFile; context_repeat = $ContextRepeat; max_tokens = $MaxTokens; spec_type = $SpecType; batch = $Batch; ubatch = $UBatch; seeds = $Seeds; stream_total_tps_median = Get-Median @($rows.stream_total_tps); stream_generation_only_tps_median = Get-Median @($rows.stream_generation_only_tps); server_decode_tps_median = Get-Median @($rows.server_decode_tps); ttft_ms_median = Get-Median @($rows.ttft_ms); raw_results = $rows }
+    $summary = [ordered]@{ mode = $Mode; warmup = -not $SkipWarmup; warmup_seed = $WarmupSeed; prompt_file = $PromptFile; unique_prompt = [bool]$UniquePrompt; context_repeat = $ContextRepeat; max_tokens = $MaxTokens; spec_type = $SpecType; batch = $Batch; ubatch = $UBatch; seeds = $Seeds; stream_total_tps_median = Get-Median @($rows.stream_total_tps); stream_generation_only_tps_median = Get-Median @($rows.stream_generation_only_tps); server_decode_tps_median = Get-Median @($rows.server_decode_tps); ttft_ms_median = Get-Median @($rows.ttft_ms); raw_results = $rows }
     $summary | ConvertTo-Json -Depth 10 | Set-Content (Join-Path $output 'SUMMARY.json')
     $summary | ConvertTo-Json -Depth 10
 } finally {

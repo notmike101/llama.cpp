@@ -7,9 +7,9 @@
     "quant": "UD-Q3_K_M",
     "context": 150000,
     "alias": "qwen3.6-35b-a3b@q3_k_m",
-    "promoted_engine": "engines/b10079-mtp-215tps/llama-server.exe",
-    "promoted_engine_sha256": "A263CC1A832D332D7A8CFBE7B36EBD340D573ACF979F1EDE0C02BD166F678DE2",
-    "promoted_cuda_sha256": "2E28A348E24624113B2B5480754D29B76669164A98900092E448709D328DAD67"
+    "promoted_engine": "engines/k1332-f8-ngram-prime-q8-iq4/llama-server.exe",
+    "promoted_engine_sha256": "2F7910740A48DCA941779DA267DA204E41012B6685AECD7FFBF79138A3C6AF63",
+    "promoted_cuda_sha256": "79DBDED20FB4FA6668199F6020C0999C75978450904CD182D77D340F4225ABB7"
   },
   "qwen36_27b_mtp_q4km": {
     "campaign": "qwen36-27b-mtp",

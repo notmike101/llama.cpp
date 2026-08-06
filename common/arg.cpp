@@ -3951,6 +3951,16 @@ common_params_context common_params_parser_init(common_params & params, llama_ex
             params.speculative.ngram_mod.n_match = value;
         }
     ).set_spec().set_examples({LLAMA_EXAMPLE_SPECULATIVE, LLAMA_EXAMPLE_SERVER, LLAMA_EXAMPLE_CLI}));
+    add_opt(common_arg(
+        {"--spec-ngram-mod-n-prime"}, "N",
+        string_format("number of requests to learn before ngram-mod drafting (default: %d)", params.speculative.ngram_mod.n_prime),
+        [](common_params & params, int value) {
+            if (value < 0 || value > 1024) {
+                throw std::invalid_argument("ngram prime count must be between 0 and 1024 inclusive");
+            }
+            params.speculative.ngram_mod.n_prime = value;
+        }
+    ).set_spec().set_examples({LLAMA_EXAMPLE_SPECULATIVE, LLAMA_EXAMPLE_SERVER, LLAMA_EXAMPLE_CLI}));
 
     add_opt(common_arg(
         {"--spec-ngram-simple-size-n"}, "N",

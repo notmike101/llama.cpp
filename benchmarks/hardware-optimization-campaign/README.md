@@ -1,5 +1,58 @@
 # Qwen3.6 MTP real-use campaign
 
+## 2026-08-06 ngram-mod priming promotion
+
+The promoted profile combines the qualified Q8_0 six-column row-warp and
+IQ4_XS four-row CUDA paths with `draft-mtp,ngram-mod`. The ngram-mod cache
+learns one request before drafting, using lookup length 7 and draft range 1-5.
+This avoids cold self-drafting while leaving the default ngram-mod behavior
+unchanged unless `--spec-ngram-mod-n-prime` is set.
+
+The matched five-seed stream medians were 332.049 server and 302.768 client
+TPS cold, versus 288.271 and 265.648 for control. Representative warm medians
+were 335.034 and 313.285, versus 283.083 and 262.707. Cold and warm nonstream,
+unique and repeated prompts, 13,597- and 135,097-token occupied contexts, and
+128- and 512-token caps all exceeded their matched control by at least 15 TPS
+for both server decode and client-visible throughput. The near-max client
+median was 140.000 versus 121.981 TPS.
+
+All matched outputs were byte-identical. Thirty 512-token candidate programs
+compiled with MSVC C++20 `/W4 /WX`, ran, and printed `All tests passed.` The
+parser-normal no-tools and parser-bypass unused-tool cells returned exact
+`Hello` and stopped naturally for all seeds. Native structured tool formatting
+remains the existing unsupported model path. Raw non-MTP and llama-bench
+diagnostics stayed flat, confirming that the gain comes from request-level
+speculative reuse rather than raw decode.
+
+## 2026-08-05 new +15 tok/s campaign
+
+Authoritative metric: sampled single-user generation speed. For non-streaming
+cells this is server decode TPS plus request end-to-end TPS; for streaming
+cells it is server decode TPS plus client stream-total TPS and TTFT. Success
+requires an ordinary five-seed median at least 15 tok/s above a fresh matched
+control in every required served-request cell, not only in a decode diagnostic.
+
+Fixed workload: `/v1/chat/completions`, exact
+`Qwen3.6-35B-A3B-UD-Q3_K_M.gguf` with its integrated Q4_0 NextN tensors,
+CUDA0 full offload, context 150000, one slot and one request, batch 2048,
+microbatch 512, F16 target and draft KV, FlashAttention, no mmap, backend
+sampling, reasoning off, temperature 0.6, top-k 20, top-p 0.95, min-p 0.0,
+rotating seeds 101/202/303/404/505, and the existing warning-clean C++20
+compile/run quality gate. The production profile starts at MTP depth 5,
+p-min 0.16, p-split 0.10, eight target/draft threads, the 40,192-token draft
+head, ranked-1,575 target map, normal parser path, and 512 output tokens.
+
+Required promotion matrix: short unique and exact-repeat prompts in both
+streaming and non-streaming modes; medium and 135,097-token occupied contexts;
+128- and 512-token caps; parser-normal and parser-bypass exact-output cells;
+no-tools and unused-tool payloads (with the existing native structured-tool
+limitation recorded separately); natural stop; raw non-MTP fallback;
+`llama-bench` prompt/decode diagnostics; quality, identity, MTP acceptance,
+memory, process cleanup, and cold/warm checks. Prompt cache state and effective
+request settings must be recorded, and all finalist cells use five qualifying
+seeds. The current Windows session is RDP, so the fresh RDP control is the
+campaign baseline unless an independently authorized console run is performed.
+
 Target identity: `qwen36_35b_a3b_mtp_q3km` in `../model-targets.json`.
 No Qwen3.6 27B result, engine, hot-vocabulary map, n-gram setting, vision
 configuration, or 65,536-context measurement is evidence for this campaign.

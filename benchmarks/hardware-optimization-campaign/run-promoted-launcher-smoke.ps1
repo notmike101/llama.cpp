@@ -2,7 +2,8 @@
 param(
     [string]$Id = 'K1179-promoted-launcher-console-smoke',
     [int]$Port = 18080,
-    [int[]]$Seeds = @(101, 202, 303, 404, 505)
+    [int[]]$Seeds = @(101, 202, 303, 404, 505),
+    [int]$WarmupSeed = 101
 )
 
 Set-StrictMode -Version Latest
@@ -60,7 +61,7 @@ try {
             -Method Post -ContentType 'application/json' -Body $body -TimeoutSec 120
     }
 
-    Invoke-Completion 999 | Out-Null
+    Invoke-Completion $WarmupSeed | Out-Null
     $rows = @($Seeds | ForEach-Object {
         $response = Invoke-Completion $_
         [pscustomobject]@{

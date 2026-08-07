@@ -90,7 +90,6 @@ if not "%GPU_MEMORY_CLOCK%"=="0" (
 "%LLAMA_SERVER%" ^
     -m "%MODEL%" ^
     --jinja ^
-    --skip-chat-parsing ^
     --spec-type "%SPEC_TYPE%" ^
     --spec-draft-n-max "%SPEC_DRAFT_N_MAX%" ^
     --spec-draft-n-min "%SPEC_DRAFT_N_MIN%" ^

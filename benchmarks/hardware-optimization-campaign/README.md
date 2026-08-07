@@ -9,11 +9,12 @@ After ngram-mod was removed, the ranked target hotmap still changed the exact
 answer `Hello, World` to `Hello, 0`, proving that it was not safe for arbitrary
 production text.
 
-The production launcher now uses full target sampling, `draft-mtp` only, and
-`--skip-chat-parsing`. A bounded 21,955-token request with an unused tool schema
-returned exact `Hello, World` and stopped after four tokens in both streaming
-and nonstreaming modes. Structured API tool calls remain unavailable on this
-content-only path.
+The production launcher now uses full target sampling and `draft-mtp` only.
+A bounded 21,955-token request with an unused tool schema returned exact
+`Hello, World` and stopped after four tokens in both streaming and nonstreaming
+modes. Native parsing was then restored: a five-file `Read` request returned
+five structured API tool calls with the exact paths and `finish_reason` set to
+`tool_calls`.
 
 ## 2026-08-06 ngram-mod priming promotion
 

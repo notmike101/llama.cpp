@@ -1,11 +1,26 @@
 # Qwen3.6 MTP real-use campaign
 
+## 2026-08-07 production rollback
+
+The 2026-08-06 ngram and ranked target-hotmap promotion is retracted. A live
+24,054-token streaming request activated the PEG-native tool parser, disabled
+backend sampling, and generated 851 corrupt tokens without a natural stop.
+After ngram-mod was removed, the ranked target hotmap still changed the exact
+answer `Hello, World` to `Hello, 0`, proving that it was not safe for arbitrary
+production text.
+
+The production launcher now uses full target sampling, `draft-mtp` only, and
+`--skip-chat-parsing`. A bounded 21,955-token request with an unused tool schema
+returned exact `Hello, World` and stopped after four tokens in both streaming
+and nonstreaming modes. Structured API tool calls remain unavailable on this
+content-only path.
+
 ## 2026-08-06 ngram-mod priming promotion
 
-The promoted profile combines the qualified Q8_0 six-column row-warp and
+The retracted profile combined the qualified Q8_0 six-column row-warp and
 IQ4_XS four-row CUDA paths with `draft-mtp,ngram-mod`. The ngram-mod cache
 learns one request before drafting, using lookup length 7 and draft range 1-5.
-This avoids cold self-drafting while leaving the default ngram-mod behavior
+This avoided cold self-drafting while leaving the default ngram-mod behavior
 unchanged unless `--spec-ngram-mod-n-prime` is set.
 
 The matched five-seed stream medians were 332.049 server and 302.768 client
@@ -16,13 +31,15 @@ unique and repeated prompts, 13,597- and 135,097-token occupied contexts, and
 for both server decode and client-visible throughput. The near-max client
 median was 140.000 versus 121.981 TPS.
 
-All matched outputs were byte-identical. Thirty 512-token candidate programs
+The narrow matched outputs were byte-identical. Thirty 512-token candidate programs
 compiled with MSVC C++20 `/W4 /WX`, ran, and printed `All tests passed.` The
 parser-normal no-tools and parser-bypass unused-tool cells returned exact
 `Hello` and stopped naturally for all seeds. Native structured tool formatting
-remains the existing unsupported model path. Raw non-MTP and llama-bench
+remained the existing unsupported model path. Raw non-MTP and llama-bench
 diagnostics stayed flat, confirming that the gain comes from request-level
-speculative reuse rather than raw decode.
+speculative reuse rather than raw decode. These tests did not cover arbitrary
+vocabulary under the real native parser path and were insufficient for
+production promotion.
 
 ## 2026-08-05 new +15 tok/s campaign
 

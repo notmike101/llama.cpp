@@ -1,5 +1,15 @@
 # Durable Findings
 
+## 2026-08-07 - Retract ngram and target-hotmap production promotion
+
+A live 24,054-token PEG-native tool request produced sustained multilingual
+token corruption. Removing ngram-mod reduced the failure to `Hello, 0`.
+Disabling `LLAMA_SPEC_TARGET_FAST_SAMPLE` and `LLAMA_QWEN35_TARGET_HOTMAP`
+restored exact `Hello, World` for short and 21,955-token tool-bearing requests
+in streaming and nonstreaming modes. Production now forces
+`--skip-chat-parsing` and uses `draft-mtp` only. Coding-only exact-output tests
+did not validate arbitrary target vocabulary.
+
 Read this file before every continuation of this campaign. Preserve superseded findings and link corrections to raw evidence and commits.
 
 ## Current production invariants

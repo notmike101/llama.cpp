@@ -2,7 +2,7 @@
 setlocal EnableExtensions
 
 rem Optimized llama.cpp Qwen MTP build qualified on RTX 3090.
-if not defined LLAMA_SERVER set "LLAMA_SERVER=C:\llama-cpp-src\engines\k1332-f8-ngram-prime-q8-iq4\llama-server.exe"
+if not defined LLAMA_SERVER set "LLAMA_SERVER=C:\llama-cpp-src\engines\k1097-k514-exactptx-iq3s-l2prefetch\llama-server.exe"
 if not defined MODEL set "MODEL=C:\llama-cpp-src\Qwen3.6-35B-A3B-MTP-GGUF\Qwen3.6-35B-A3B-UD-Q3_K_M.gguf"
 if not defined HOST set "HOST=0.0.0.0"
 if not defined PORT set "PORT=8080"
@@ -35,12 +35,12 @@ if not defined REASONING set "REASONING=off"
 if not defined REASONING_FORMAT set "REASONING_FORMAT=none"
 if not defined SPEC_DRAFT_N_MAX set "SPEC_DRAFT_N_MAX=5"
 if not defined SPEC_DRAFT_N_MIN set "SPEC_DRAFT_N_MIN=0"
-if not defined SPEC_DRAFT_P_MIN set "SPEC_DRAFT_P_MIN=0.15"
+if not defined SPEC_DRAFT_P_MIN set "SPEC_DRAFT_P_MIN=0.16"
 if not defined SPEC_DRAFT_P_SPLIT set "SPEC_DRAFT_P_SPLIT=0.10"
 if not defined MTP_DRAFT_VOCAB set "MTP_DRAFT_VOCAB=40192"
 if not defined ENABLE_CONTEXT_SKIP5 set "ENABLE_CONTEXT_SKIP5=0"
-if not defined SPEC_TYPE set "SPEC_TYPE=draft-mtp,ngram-mod"
-if not defined SPEC_ARGS set "SPEC_ARGS=--spec-ngram-mod-n-min 1 --spec-ngram-mod-n-max 5 --spec-ngram-mod-n-match 7 --spec-ngram-mod-n-prime 1"
+if not defined SPEC_TYPE set "SPEC_TYPE=draft-mtp"
+if not defined SPEC_ARGS set "SPEC_ARGS="
 
 set "GGML_CUDA_Q8_SOURCE_REUSE=1"
 set "GGML_CUDA_Q8_PERSISTENT_SOURCE_REUSE=1"
@@ -50,8 +50,8 @@ set "LLAMA_CUDA_GDN_PROJECTION_FUSION=1"
 set "LLAMA_CUDA_GDN_DIRECT_STATE_GATHER=1"
 set "LLAMA_SERVER_DEVICE_CHECKPOINT=0"
 set "LLAMA_QWEN35_MTP_VOCAB=%MTP_DRAFT_VOCAB%"
-set "LLAMA_SPEC_TARGET_FAST_SAMPLE=1"
-set "LLAMA_QWEN35_TARGET_HOTMAP=C:\llama-cpp-src\benchmarks\hardware-optimization-campaign\qwen36-target-hotmap-ranked-1575.txt"
+set "LLAMA_SPEC_TARGET_FAST_SAMPLE="
+set "LLAMA_QWEN35_TARGET_HOTMAP="
 if "%ENABLE_CONTEXT_SKIP5%"=="1" (
     set "LLAMA_QWEN35_CONTEXT_SKIP5=1"
     set "LLAMA_QWEN35_CONTEXT_SKIP5_MAX=4096"
@@ -90,6 +90,7 @@ if not "%GPU_MEMORY_CLOCK%"=="0" (
 "%LLAMA_SERVER%" ^
     -m "%MODEL%" ^
     --jinja ^
+    --skip-chat-parsing ^
     --spec-type "%SPEC_TYPE%" ^
     --spec-draft-n-max "%SPEC_DRAFT_N_MAX%" ^
     --spec-draft-n-min "%SPEC_DRAFT_N_MIN%" ^

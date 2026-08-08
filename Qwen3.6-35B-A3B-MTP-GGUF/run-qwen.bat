@@ -3,7 +3,7 @@ setlocal EnableExtensions
 
 rem Optimized llama.cpp Qwen MTP build qualified on RTX 3090.
 if not defined LLAMA_SERVER set "LLAMA_SERVER=C:\llama-cpp-src\engines\k1097-k514-exactptx-iq3s-l2prefetch\llama-server.exe"
-if not defined MODEL set "MODEL=C:\llama-cpp-src\Qwen3.6-35B-A3B-MTP-GGUF\Qwen3.6-35B-A3B-UD-Q3_K_M.gguf"
+if not defined MODELS_PRESET set "MODELS_PRESET=%~dp0qwen-router.ini"
 if not defined HOST set "HOST=0.0.0.0"
 if not defined PORT set "PORT=8080"
 if not defined MODEL_ALIAS set "MODEL_ALIAS=qwen3.6-35b-a3b@q3_k_m"
@@ -88,7 +88,8 @@ if not "%GPU_MEMORY_CLOCK%"=="0" (
 )
 
 "%LLAMA_SERVER%" ^
-    -m "%MODEL%" ^
+    --models-preset "%MODELS_PRESET%" ^
+    --no-models-autoload ^
     --jinja ^
     --spec-type "%SPEC_TYPE%" ^
     --spec-draft-n-max "%SPEC_DRAFT_N_MAX%" ^

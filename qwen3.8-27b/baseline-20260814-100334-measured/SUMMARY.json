@@ -1,0 +1,63 @@
+{
+  "metric_definitions": {
+    "server_decode_tps": "server-reported generated tokens / server decode interval",
+    "request_e2e_tps": "completion tokens / client request-start to response-complete wall time",
+    "stream_total_tps": "completion tokens / client request-start to final-token wall time"
+  },
+  "seed_count": 3,
+  "seeds": [
+    101,
+    202,
+    303
+  ],
+  "server_decode_tps_median": 38.541990442642316,
+  "request_e2e_tps_median": 37.991067943760164,
+  "stream_total_tps_median": 0.0,
+  "raw_results": [
+    {
+      "seed": 101,
+      "stream": false,
+      "status": 200,
+      "prompt_tokens": 28.0,
+      "cache_tokens": null,
+      "output_tokens": 512.0,
+      "server_decode_tps": 38.833912599529945,
+      "request_e2e_tps": 38.26958052249368,
+      "stream_total_tps": null,
+      "ttft_ms": null,
+      "wall_ms": 13378.7722,
+      "raw_path": "C:\\llama-cpp-src\\qwen3.8-27b\\baseline-20260814-100334-measured\\seed-101-json.raw",
+      "identity_path": "C:\\llama-cpp-src\\qwen3.8-27b\\baseline-20260814-100334-measured\\IDENTITY.json"
+    },
+    {
+      "seed": 202,
+      "stream": false,
+      "status": 200,
+      "prompt_tokens": 28.0,
+      "cache_tokens": null,
+      "output_tokens": 512.0,
+      "server_decode_tps": 38.541990442642316,
+      "request_e2e_tps": 37.991067943760164,
+      "stream_total_tps": null,
+      "ttft_ms": null,
+      "wall_ms": 13476.852,
+      "raw_path": "C:\\llama-cpp-src\\qwen3.8-27b\\baseline-20260814-100334-measured\\seed-202-json.raw",
+      "identity_path": "C:\\llama-cpp-src\\qwen3.8-27b\\baseline-20260814-100334-measured\\IDENTITY.json"
+    },
+    {
+      "seed": 303,
+      "stream": false,
+      "status": 200,
+      "prompt_tokens": 28.0,
+      "cache_tokens": null,
+      "output_tokens": 512.0,
+      "server_decode_tps": 38.259304947474696,
+      "request_e2e_tps": 37.71959860394461,
+      "stream_total_tps": null,
+      "ttft_ms": null,
+      "wall_ms": 13573.8454,
+      "raw_path": "C:\\llama-cpp-src\\qwen3.8-27b\\baseline-20260814-100334-measured\\seed-303-json.raw",
+      "identity_path": "C:\\llama-cpp-src\\qwen3.8-27b\\baseline-20260814-100334-measured\\IDENTITY.json"
+    }
+  ]
+}

@@ -1,0 +1,95 @@
+{
+  "metric_definitions": {
+    "server_decode_tps": "server-reported generated tokens / server decode interval",
+    "request_e2e_tps": "completion tokens / client request-start to response-complete wall time",
+    "stream_total_tps": "completion tokens / client request-start to final-token wall time"
+  },
+  "seed_count": 5,
+  "seeds": [
+    101,
+    202,
+    303,
+    404,
+    505
+  ],
+  "server_decode_tps_median": 63.88737817952229,
+  "request_e2e_tps_median": 62.4161519152573,
+  "stream_total_tps_median": 0.0,
+  "raw_results": [
+    {
+      "seed": 101,
+      "stream": false,
+      "status": 200,
+      "prompt_tokens": 28.0,
+      "cache_tokens": null,
+      "output_tokens": 512.0,
+      "server_decode_tps": 65.50194551032872,
+      "request_e2e_tps": 63.23106831866231,
+      "stream_total_tps": null,
+      "ttft_ms": null,
+      "wall_ms": 8097.2853,
+      "raw_path": ".\\qwen3.8-27b\\M002-mtp4-cpummproj-five\\seed-101-json.raw",
+      "identity_path": ".\\qwen3.8-27b\\M002-mtp4-cpummproj-five\\IDENTITY.json"
+    },
+    {
+      "seed": 202,
+      "stream": false,
+      "status": 200,
+      "prompt_tokens": 28.0,
+      "cache_tokens": null,
+      "output_tokens": 512.0,
+      "server_decode_tps": 58.801388357164,
+      "request_e2e_tps": 57.57274175362118,
+      "stream_total_tps": null,
+      "ttft_ms": null,
+      "wall_ms": 8893.0974,
+      "raw_path": ".\\qwen3.8-27b\\M002-mtp4-cpummproj-five\\seed-202-json.raw",
+      "identity_path": ".\\qwen3.8-27b\\M002-mtp4-cpummproj-five\\IDENTITY.json"
+    },
+    {
+      "seed": 303,
+      "stream": false,
+      "status": 200,
+      "prompt_tokens": 28.0,
+      "cache_tokens": null,
+      "output_tokens": 512.0,
+      "server_decode_tps": 65.38789609901698,
+      "request_e2e_tps": 63.87808547995723,
+      "stream_total_tps": null,
+      "ttft_ms": null,
+      "wall_ms": 8015.2684,
+      "raw_path": ".\\qwen3.8-27b\\M002-mtp4-cpummproj-five\\seed-303-json.raw",
+      "identity_path": ".\\qwen3.8-27b\\M002-mtp4-cpummproj-five\\IDENTITY.json"
+    },
+    {
+      "seed": 404,
+      "stream": false,
+      "status": 200,
+      "prompt_tokens": 28.0,
+      "cache_tokens": null,
+      "output_tokens": 512.0,
+      "server_decode_tps": 63.88737817952229,
+      "request_e2e_tps": 62.4161519152573,
+      "stream_total_tps": null,
+      "ttft_ms": null,
+      "wall_ms": 8203.0049,
+      "raw_path": ".\\qwen3.8-27b\\M002-mtp4-cpummproj-five\\seed-404-json.raw",
+      "identity_path": ".\\qwen3.8-27b\\M002-mtp4-cpummproj-five\\IDENTITY.json"
+    },
+    {
+      "seed": 505,
+      "stream": false,
+      "status": 200,
+      "prompt_tokens": 28.0,
+      "cache_tokens": null,
+      "output_tokens": 512.0,
+      "server_decode_tps": 55.14452560006363,
+      "request_e2e_tps": 53.627401423514236,
+      "stream_total_tps": null,
+      "ttft_ms": null,
+      "wall_ms": 9547.358,
+      "raw_path": ".\\qwen3.8-27b\\M002-mtp4-cpummproj-five\\seed-505-json.raw",
+      "identity_path": ".\\qwen3.8-27b\\M002-mtp4-cpummproj-five\\IDENTITY.json"
+    }
+  ]
+}

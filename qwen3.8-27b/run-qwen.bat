@@ -22,6 +22,8 @@ if not defined TOP_P set "TOP_P=0.95"
 if not defined MIN_P set "MIN_P=0.0"
 if not defined REPEAT_PENALTY set "REPEAT_PENALTY=1.0"
 if not defined PRESENCE_PENALTY set "PRESENCE_PENALTY=0.0"
+if not defined SPEC_DRAFT_N_MAX set "SPEC_DRAFT_N_MAX=4"
+if not defined SPEC_DRAFT_P_SPLIT set "SPEC_DRAFT_P_SPLIT=0.10"
 if not defined EXTRA_ARGS set "EXTRA_ARGS="
 
 if not exist "%LLAMA_SERVER%" (
@@ -47,6 +49,7 @@ echo Launching "%MODEL_ALIAS%" with vision enabled
 "%LLAMA_SERVER%" ^
     -m "%MODEL%" ^
     --mmproj "%MMPROJ%" ^
+    --no-mmproj-offload ^
     --image-min-tokens 1024 ^
     --alias "%MODEL_ALIAS%" ^
     --host "%HOST%" ^
@@ -72,6 +75,16 @@ echo Launching "%MODEL_ALIAS%" with vision enabled
     --min-p "%MIN_P%" ^
     --repeat-penalty "%REPEAT_PENALTY%" ^
     --presence-penalty "%PRESENCE_PENALTY%" ^
+    --spec-type draft-mtp ^
+    --spec-draft-n-max "%SPEC_DRAFT_N_MAX%" ^
+    --spec-draft-n-min 0 ^
+    --spec-draft-p-min 0.0 ^
+    --spec-draft-p-split "%SPEC_DRAFT_P_SPLIT%" ^
+    --backend-sampling ^
+    --spec-draft-device CUDA0 ^
+    --spec-draft-ngl all ^
+    --spec-draft-threads "%THREADS%" ^
+    --spec-draft-threads-batch "%THREADS%" ^
     %EXTRA_ARGS%
 
 set "SERVER_EXIT=%ERRORLEVEL%"

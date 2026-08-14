@@ -787,22 +787,32 @@ def test_anthropic_streaming_content_block_indices():
 def test_anthropic_thinking():
     """Test extended thinking parameter"""
     server.jinja = True
+    server.reasoning = "off"
+    server.chat_template_file = '../../../models/templates/Qwen-Qwen3-0.6B.jinja'
     server.start()
 
-    res = server.make_request("POST", "/v1/messages", data={
+    common = {
         "model": "test",
-        "max_tokens": 100,
-        "thinking": {
-            "type": "enabled",
-            "budget_tokens": 50
-        },
         "messages": [
             {"role": "user", "content": "What is 2+2?"}
         ]
+    }
+
+    disabled = server.make_request("POST", "/v1/messages/count_tokens", data={
+        **common,
+        "thinking": {"type": "disabled"},
+    })
+    omitted = server.make_request("POST", "/v1/messages/count_tokens", data=common)
+    enabled = server.make_request("POST", "/v1/messages/count_tokens", data={
+        **common,
+        "thinking": {"type": "enabled", "budget_tokens": 50},
     })
 
-    assert res.status_code == 200
-    assert res.body["type"] == "message"
+    assert disabled.status_code == 200
+    assert omitted.status_code == 200
+    assert enabled.status_code == 200
+    assert disabled.body["input_tokens"] == omitted.body["input_tokens"]
+    assert enabled.body["input_tokens"] != disabled.body["input_tokens"]
 
 
 def test_anthropic_metadata():

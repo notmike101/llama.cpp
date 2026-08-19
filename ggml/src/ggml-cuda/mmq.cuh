@@ -912,6 +912,20 @@ static __device__ __forceinline__ void mul_mat_q_process_tile(
 
         __syncthreads();
 
+#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= GGML_CUDA_CC_AMPERE && __CUDA_ARCH__ < GGML_CUDA_CC_ADA_LOVELACE
+        if constexpr (type == GGML_TYPE_Q4_K) {
+            if (kb0 + blocks_per_iter < kb0_stop) {
+                const int i0 = threadIdx.y*warp_size + threadIdx.x;
+                if (i0 < I) {
+                    const int i = fallback ? min(i0, tile_x_max_i) : i0;
+                    const block_q4_K * bxi = (const block_q4_K *) x + offset_x + kb0 + blocks_per_iter + i*stride_row_x;
+                    asm volatile("prefetch.global.L2 [%0];" : : "l"(bxi));
+                    asm volatile("prefetch.global.L2 [%0];" : : "l"((const char *) bxi + 128));
+                }
+            }
+        }
+#endif
+
         vec_dot(tile_x, tile_y, sum, 0);
 
         __syncthreads();

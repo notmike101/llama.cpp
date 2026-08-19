@@ -1,6 +1,9 @@
 #include "models.h"
 #include "llama-memory-recurrent.h"
 
+#include <fstream>
+#include <set>
+
 void llama_model_qwen35::load_arch_hparams(llama_model_loader & ml) {
     ml.get_key(LLM_KV_ATTENTION_LAYERNORM_RMS_EPS,       hparams.f_norm_rms_eps);
     ml.get_key_or_arr(LLM_KV_ROPE_DIMENSION_SECTIONS,    hparams.rope_sections, 4, true);
@@ -125,6 +128,75 @@ void llama_model_qwen35::load_arch_tensors(llama_model_loader & ml) {
     for (int i = n_layer; i < n_layer_all; ++i) {
         load_block_mtp(i);
     }
+}
+
+bool llama_model_qwen35::load_tensors(llama_model_loader & ml) {
+    if (!llama_model_base::load_tensors(ml)) {
+        return false;
+    }
+
+    if (hparams.no_alloc) {
+        return true;
+    }
+
+    const char * map_path = std::getenv("LLAMA_QWEN35_MTP_MAP");
+    const char * prefix_value = std::getenv("LLAMA_QWEN35_MTP_VOCAB");
+    if (map_path == nullptr || prefix_value == nullptr) {
+        return true;
+    }
+
+    const int32_t n_prefix = std::atoi(prefix_value);
+    GGML_ASSERT(output && output_s == nullptr && n_prefix > 0 && n_prefix <= output->ne[1]);
+
+    std::ifstream input(map_path);
+    if (!input) {
+        throw std::runtime_error("failed to open QWEN35 MTP token map");
+    }
+
+    std::set<int32_t> unique_ids;
+    int32_t id;
+    while (input >> id) {
+        GGML_ASSERT(id >= 0 && id < output->ne[1]);
+        if (id >= n_prefix) {
+            unique_ids.insert(id);
+        }
+    }
+    if (unique_ids.empty()) {
+        return true;
+    }
+
+    const std::vector<int32_t> ids(unique_ids.begin(), unique_ids.end());
+    const ggml_init_params ctx_params = {
+        /*.mem_size   =*/ 2*ggml_tensor_overhead(),
+        /*.mem_buffer =*/ nullptr,
+        /*.no_alloc   =*/ true,
+    };
+    mtp_tail_ctx.reset(ggml_init(ctx_params));
+    if (!mtp_tail_ctx) {
+        throw std::runtime_error("failed to create QWEN35 MTP tail context");
+    }
+
+    mtp_tail_head = ggml_new_tensor_2d(mtp_tail_ctx.get(), output->type, output->ne[0], ids.size());
+    mtp_tail_ids = ggml_new_tensor_1d(mtp_tail_ctx.get(), GGML_TYPE_I32, ids.size());
+    ggml_set_name(mtp_tail_head, "qwen35_mtp_tail_head");
+
+    ggml_backend_buffer_type_t buft = ggml_backend_buffer_get_type(output->buffer);
+    mtp_tail_buf.reset(ggml_backend_alloc_ctx_tensors_from_buft(mtp_tail_ctx.get(), buft));
+    if (!mtp_tail_buf) {
+        throw std::runtime_error("failed to allocate QWEN35 MTP tail buffer");
+    }
+    ggml_backend_buffer_set_usage(mtp_tail_buf.get(), GGML_BACKEND_BUFFER_USAGE_WEIGHTS);
+
+    const size_t row_size = output->nb[1];
+    std::vector<uint8_t> data(row_size);
+    for (size_t i = 0; i < ids.size(); ++i) {
+        ggml_backend_tensor_get(output, data.data(), row_size*ids[i], row_size);
+        ggml_backend_tensor_set(mtp_tail_head, data.data(), row_size*i, row_size);
+    }
+    ggml_backend_tensor_set(mtp_tail_ids, ids.data(), 0, ids.size()*sizeof(ids[0]));
+    LLAMA_LOG_INFO("%s: materialized %zu QWEN35 MTP tail rows\n", __func__, ids.size());
+
+    return true;
 }
 
 std::unique_ptr<llm_graph_context> llama_model_qwen35::build_arch_graph(const llm_graph_params & params) const {
@@ -637,7 +709,38 @@ llama_model_qwen35::graph_mtp::graph_mtp(const llama_model & model, const llm_gr
     ggml_tensor * head_w = layer.nextn.shared_head_head ? layer.nextn.shared_head_head : model.output;
     ggml_tensor * head_s = layer.nextn.shared_head_head ? layer.nextn.shared_head_head_s : model.output_s;
     GGML_ASSERT(head_w && "QWEN35 MTP: missing LM head (nextn.shared_head_head or model.output)");
+
+    const auto & qwen35 = static_cast<const llama_model_qwen35 &>(model);
+    ggml_tensor * hidden = cur;
+    int64_t n_draft_vocab = head_w->ne[1];
+    if (const char * value = std::getenv("LLAMA_QWEN35_MTP_VOCAB")) {
+        n_draft_vocab = std::atoll(value);
+        GGML_ASSERT(n_draft_vocab > 0 && n_draft_vocab <= head_w->ne[1]);
+        GGML_ASSERT(head_s == nullptr);
+        head_w = ggml_view_2d(ctx0, head_w, head_w->ne[0], n_draft_vocab, head_w->nb[1], 0);
+    }
+
     cur = build_lora_mm(head_w, cur, head_s);
+
+    if (qwen35.mtp_tail_head) {
+        ggml_tensor * tail = build_lora_mm(qwen35.mtp_tail_head, hidden, nullptr);
+        cur = ggml_concat(ctx0, cur, tail, 0);
+        n_draft_vocab += qwen35.mtp_tail_head->ne[1];
+    }
+
+    if (n_draft_vocab != model.vocab.n_tokens()) {
+        const int64_t n_outputs = cur->ne[1];
+        ggml_tensor * token_ids = ggml_cast(ctx0, ggml_arange(ctx0, 0.0f, head_w->ne[1], 1.0f), GGML_TYPE_I32);
+        if (qwen35.mtp_tail_ids) {
+            token_ids = ggml_concat(ctx0, token_ids, qwen35.mtp_tail_ids, 0);
+        }
+        ggml_tensor * logits = ggml_fill(
+                ctx0, ggml_new_tensor_3d(ctx0, GGML_TYPE_F32, 1, model.vocab.n_tokens(), n_outputs), -INFINITY);
+        cur = ggml_set_rows(ctx0, logits,
+                ggml_reshape_3d(ctx0, cur,       1, n_draft_vocab, n_outputs),
+                ggml_reshape_3d(ctx0, token_ids, n_draft_vocab, 1,             1));
+        cur = ggml_reshape_2d(ctx0, cur, model.vocab.n_tokens(), n_outputs);
+    }
     cb(cur, "result_output", -1);
 
     res->t_logits = cur;

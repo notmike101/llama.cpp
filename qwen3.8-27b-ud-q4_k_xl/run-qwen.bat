@@ -9,8 +9,7 @@ if not defined PORT set "PORT=8080"
 if not defined HEALTH_HOST set "HEALTH_HOST=%HOST%"
 if /I "%HEALTH_HOST%"=="0.0.0.0" set "HEALTH_HOST=127.0.0.1"
 if not defined MODEL_ALIAS set "MODEL_ALIAS=qwen3.8-27b@ud-q4_k_xl"
-:: if not defined CTX set "CTX=147456"
-if not defined CTX set "CTX=120000"
+if not defined CTX set "CTX=147456"
 if not defined BATCH set "BATCH=2048"
 if not defined UBATCH set "UBATCH=512"
 if not defined THREADS set "THREADS=6"
@@ -27,6 +26,15 @@ if not defined LLAMA_QWEN35_MTP_VOCAB set "LLAMA_QWEN35_MTP_VOCAB=8192"
 if not defined LLAMA_QWEN35_MTP_MAP set "LLAMA_QWEN35_MTP_MAP=%~dp0mtp-tail-token-map.txt"
 if not defined SPEC_DRAFT_N_MAX set "SPEC_DRAFT_N_MAX=4"
 if not defined SPEC_DRAFT_P_SPLIT set "SPEC_DRAFT_P_SPLIT=0.10"
+if not defined LLAMA_CUDA_GDN_DIRECT_STATE_GATHER set "LLAMA_CUDA_GDN_DIRECT_STATE_GATHER=1"
+if not defined LLAMA_CUDA_SSM_CONV_DIRECT_STATE set "LLAMA_CUDA_SSM_CONV_DIRECT_STATE=1"
+
+rem MTP chained drafting (PR #27173) is OFF by default: the deferred catch-up path
+rem has a position-desync bug (M-RoPE error) and is a throughput drag. Set
+rem LLAMA_SPEC_CHAIN in the shell to enable it.
+if not defined LLAMA_SPEC_CHAIN_SUB set "LLAMA_SPEC_CHAIN_SUB=32768"
+if not defined LLAMA_SCHED_POOL set "LLAMA_SCHED_POOL=0"
+if not defined LLAMA_META_MIRROR_OUTPUT set "LLAMA_META_MIRROR_OUTPUT=0"
 if not defined EXTRA_ARGS set "EXTRA_ARGS="
 
 if not exist "%LLAMA_SERVER%" (
@@ -58,7 +66,6 @@ echo Launching "%MODEL_ALIAS%" with vision enabled
     --host "%HOST%" ^
     --port "%PORT%" ^
     --jinja ^
-    --reasoning off ^
     --reasoning-format auto ^
     --reasoning-preserve ^
     -ngl all ^
@@ -88,6 +95,7 @@ echo Launching "%MODEL_ALIAS%" with vision enabled
     --spec-draft-ngl all ^
     --spec-draft-threads "%THREADS%" ^
     --spec-draft-threads-batch "%THREADS%" ^
+	--metrics
     %EXTRA_ARGS%
 
 set "SERVER_EXIT=%ERRORLEVEL%"

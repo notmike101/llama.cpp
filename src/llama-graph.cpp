@@ -3382,7 +3382,13 @@ ggml_tensor * llm_graph_context::build_rs(
     // NOTE: assuming the copy destinations are ALL contained between rs_head and rs_head + n_rs
     // {state_size, rs_size} -> {state_size, n_seqs}
     ggml_tensor * output_states = get_state_rows(ctx0, states, state_copy_main);
-    ggml_build_forward_expand(gf, output_states);
+    static const bool gdn_direct_state_gather = [] {
+        const char * value = std::getenv("LLAMA_CUDA_GDN_DIRECT_STATE_GATHER");
+        return value != nullptr && std::atoi(value) != 0;
+    }();
+    if (!gdn_direct_state_gather || n_seqs != 1) {
+        ggml_build_forward_expand(gf, output_states);
+    }
 
     // copy extra states which won't be changed further (between n_seqs and n_rs)
     ggml_tensor * states_extra = ggml_get_rows(ctx0, states, state_copy_extra);

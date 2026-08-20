@@ -2,7 +2,7 @@
 
 Run `run-qwen.bat` to serve the local Unsloth UD-Q4_K_XL model with its F16 vision projector.
 
-The launcher defaults to a 32,768-token context, full CUDA offload, Q8_0 K/V cache, Flash Attention, thinking disabled, and the model's recommended coding sampling. Override any launcher variable before running the batch file when needed.
+The launcher defaults to a 130,000-token context, full CUDA offload, Q8_0 K/V cache, Flash Attention, thinking enabled, and the model's recommended coding sampling. Override any launcher variable before running the batch file when needed.
 
 ## Sources
 

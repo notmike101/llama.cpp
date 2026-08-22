@@ -1390,7 +1390,8 @@ struct common_speculative_impl_draft_mtp : public common_speculative_impl {
 
         // experimental: draft all n_max tokens with one chained decode (in-graph argmax
         // feeds each next step); replaces n_max sequential draft decodes
-        chain_graph = !is_mem_shared && !chain_heads && getenv("LLAMA_SPEC_CHAIN") != nullptr;
+        const char * chain_value = getenv("LLAMA_SPEC_CHAIN");
+        chain_graph = !is_mem_shared && !chain_heads && chain_value != nullptr && std::atoi(chain_value) != 0;
         if (chain_graph) {
             // the chain decode absorbs the deferred catch-up rows, one eval per round
             defer_enabled = true;
@@ -1413,6 +1414,7 @@ struct common_speculative_impl_draft_mtp : public common_speculative_impl {
 
         verify_h.assign(n_seq, {});
         verify_h_rows.assign(n_seq, 0);
+
     }
 
     ~common_speculative_impl_draft_mtp() override {
@@ -1500,6 +1502,7 @@ struct common_speculative_impl_draft_mtp : public common_speculative_impl {
             return;
         }
 
+
         auto * ctx_dft = this->params.ctx_dft;
         const llama_pos pos_max = llama_memory_seq_pos_max(llama_get_memory(ctx_dft), seq_id);
 
@@ -1546,18 +1549,15 @@ struct common_speculative_impl_draft_mtp : public common_speculative_impl {
 
         const size_t row_bytes = (size_t) n_embd * sizeof(float);
 
-        // deferred rows at or past the incoming batch positions are stale: either a
-        // new prompt rewound the sequence, or they hold candidates a later verify
-        // rejected. Drop them and clear matching draft cells before any decode.
-        if (defer_enabled && !defer.tok.empty()) {
+        // Verification replaces the draft state at and after its first input row.
+        if (defer_enabled) {
             for (llama_seq_id seq_id = 0; seq_id < (llama_seq_id) n_seq; ++seq_id) {
                 if (i_batch_beg[seq_id] < 0) {
                     continue;
                 }
                 const llama_pos pos_min_in = batch_in.pos[i_batch_beg[seq_id]];
-                if (drop_deferred_from(seq_id, pos_min_in)) {
-                    llama_memory_seq_rm(llama_get_memory(ctx_dft), seq_id, pos_min_in, -1);
-                }
+                drop_deferred_from(seq_id, pos_min_in);
+                llama_memory_seq_rm(llama_get_memory(ctx_dft), seq_id, pos_min_in, -1);
             }
         }
 
@@ -1866,28 +1866,29 @@ struct common_speculative_impl_draft_mtp : public common_speculative_impl {
                 }
 
                 auto * smpl = smpls[seq_id].get();
+                llama_token id = LLAMA_TOKEN_NULL;
+                if (backend_chains[seq_id] != nullptr && params.p_min <= 0.0f) {
+                    id = llama_get_sampled_token_ith(ctx_dft, i_last[seq_id]);
+                }
+                if (id == LLAMA_TOKEN_NULL) {
+                    common_sampler_sample(smpl, ctx_dft, i_last[seq_id], true);
+                    const auto * cur_p = common_sampler_get_candidates(smpl, true);
 
-                common_sampler_sample(smpl, ctx_dft, i_last[seq_id], true);
+                    for (int k = 0; k < std::min(3, (int) cur_p->size); ++k) {
+                        SPC_DBG(" - seq_id %d, draft candidate %3d, pos %3d: %6d (%8.3f) '%s'\n",
+                                seq_id, k, i, cur_p->data[k].id, cur_p->data[k].p,
+                                common_token_to_piece(ctx_dft, cur_p->data[k].id).c_str());
+                    }
+
+                    id = cur_p->data[0].id;
+                    if (cur_p->data[0].p < params.p_min) {
+                        drafting[seq_id] = false;
+                        n_drafting--;
+
+                        continue;
+                    }
+                }
                 const float * h_row = llama_get_embeddings_nextn_ith(ctx_dft, i_last[seq_id]);
-
-                const auto * cur_p = common_sampler_get_candidates(smpl, true);
-
-                for (int k = 0; k < std::min(3, (int) cur_p->size); ++k) {
-                    SPC_DBG(" - seq_id %d, draft candidate %3d, pos %3d: %6d (%8.3f) '%s'\n",
-                            seq_id, k, i, cur_p->data[k].id, cur_p->data[k].p,
-                            common_token_to_piece(ctx_dft, cur_p->data[k].id).c_str());
-                }
-
-                // add drafted token for each sequence
-                const llama_token id = cur_p->data[0].id;
-
-                // only collect very high-confidence draft tokens
-                if (cur_p->data[0].p < params.p_min) {
-                    drafting[seq_id] = false;
-                    n_drafting--;
-
-                    continue;
-                }
 
                 common_sampler_accept(smpl, id, true);
 
@@ -1953,6 +1954,7 @@ struct common_speculative_impl_draft_mtp : public common_speculative_impl {
         if (seq_id < 0 || seq_id >= (llama_seq_id) n_seq) {
             return;
         }
+
 
         const int32_t n_rows = verify_h_rows[seq_id];
         if (n_rows <= 0) {

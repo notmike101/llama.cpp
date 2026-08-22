@@ -3,6 +3,7 @@
 #include "llama-kv-cache.h"
 
 #include <fstream>
+#include <numeric>
 #include <set>
 
 void llama_model_qwen35::load_arch_hparams(llama_model_loader & ml) {
@@ -167,8 +168,11 @@ bool llama_model_qwen35::load_tensors(llama_model_loader & ml) {
     }
 
     const std::vector<int32_t> ids(unique_ids.begin(), unique_ids.end());
+    std::vector<int32_t> compact_ids(n_prefix + ids.size());
+    std::iota(compact_ids.begin(), compact_ids.begin() + n_prefix, 0);
+    std::copy(ids.begin(), ids.end(), compact_ids.begin() + n_prefix);
     const ggml_init_params ctx_params = {
-        /*.mem_size   =*/ 2*ggml_tensor_overhead(),
+        /*.mem_size   =*/ 4*ggml_tensor_overhead(),
         /*.mem_buffer =*/ nullptr,
         /*.no_alloc   =*/ true,
     };
@@ -179,7 +183,10 @@ bool llama_model_qwen35::load_tensors(llama_model_loader & ml) {
 
     mtp_tail_head = ggml_new_tensor_2d(mtp_tail_ctx.get(), output->type, output->ne[0], ids.size());
     mtp_tail_ids = ggml_new_tensor_1d(mtp_tail_ctx.get(), GGML_TYPE_I32, ids.size());
+    mtp_compact_head = ggml_new_tensor_2d(mtp_tail_ctx.get(), output->type, output->ne[0], compact_ids.size());
+    mtp_compact_ids = ggml_new_tensor_1d(mtp_tail_ctx.get(), GGML_TYPE_I32, compact_ids.size());
     ggml_set_name(mtp_tail_head, "qwen35_mtp_tail_head");
+    ggml_set_name(mtp_compact_head, "qwen35_mtp_compact_head");
 
     ggml_backend_buffer_type_t buft = ggml_backend_buffer_get_type(output->buffer);
     mtp_tail_buf.reset(ggml_backend_alloc_ctx_tensors_from_buft(mtp_tail_ctx.get(), buft));
@@ -190,11 +197,17 @@ bool llama_model_qwen35::load_tensors(llama_model_loader & ml) {
 
     const size_t row_size = output->nb[1];
     std::vector<uint8_t> data(row_size);
+    for (int32_t i = 0; i < n_prefix; ++i) {
+        ggml_backend_tensor_get(output, data.data(), row_size*i, row_size);
+        ggml_backend_tensor_set(mtp_compact_head, data.data(), row_size*i, row_size);
+    }
     for (size_t i = 0; i < ids.size(); ++i) {
         ggml_backend_tensor_get(output, data.data(), row_size*ids[i], row_size);
         ggml_backend_tensor_set(mtp_tail_head, data.data(), row_size*i, row_size);
+        ggml_backend_tensor_set(mtp_compact_head, data.data(), row_size*(n_prefix + i), row_size);
     }
     ggml_backend_tensor_set(mtp_tail_ids, ids.data(), 0, ids.size()*sizeof(ids[0]));
+    ggml_backend_tensor_set(mtp_compact_ids, compact_ids.data(), 0, compact_ids.size()*sizeof(compact_ids[0]));
     LLAMA_LOG_INFO("%s: materialized %zu QWEN35 MTP tail rows\n", __func__, ids.size());
 
     return true;
@@ -791,8 +804,14 @@ llama_model_qwen35::graph_mtp::graph_mtp(const llama_model & model, const llm_gr
                 return env != nullptr ? atoll(env) : 32768;
             }();
 
+            const auto & qwen35 = static_cast<const llama_model_qwen35 &>(model);
+            ggml_tensor * token_ids_j = nullptr;
             ggml_tensor * logits_j;
-            if (n_sub_env > 0 && n_sub_env < head_w2->ne[1]) {
+            if (qwen35.mtp_compact_head && head_w2 == model.output && head_s2 == nullptr) {
+                logits_j = ggml_mul_mat(ctx0, qwen35.mtp_compact_head, h_next_j);
+                token_ids_j = qwen35.mtp_compact_ids;
+                token_ids_j = ggml_reshape_2d(ctx0, token_ids_j, 1, token_ids_j->ne[0]);
+            } else if (n_sub_env > 0 && n_sub_env < head_w2->ne[1]) {
                 ggml_tensor * head_sub = ggml_view_2d(ctx0, head_w2,
                         head_w2->ne[0], n_sub_env, head_w2->nb[1], 0);
                 logits_j = ggml_mul_mat(ctx0, head_sub, h_next_j);
@@ -807,11 +826,21 @@ llama_model_qwen35::graph_mtp::graph_mtp(const llama_model & model, const llm_gr
             // token and its probability. Emit them as a 2-float "logits" row per
             // step: [token id, top prob]. This removes the per-step host sampling
             // pass and the full-width logits transfer.
-            ggml_tensor * id_j = ggml_argmax(ctx0, logits_j);
-            ggml_tensor * probs_j = ggml_soft_max(ctx0, logits_j);
-            ggml_tensor * p_j = ggml_get_rows(ctx0,
-                    ggml_reshape_2d(ctx0, probs_j, 1, probs_j->ne[0]), id_j);
-            p_j = ggml_reshape_2d(ctx0, p_j, 1, 1);
+            ggml_tensor * idx_j = ggml_argmax(ctx0, logits_j);
+            ggml_tensor * id_j = token_ids_j ? ggml_get_rows(ctx0, token_ids_j, idx_j) : idx_j;
+            static const bool skip_prob = [] {
+                const char * env = getenv("LLAMA_SPEC_CHAIN_SKIP_PROB");
+                return env != nullptr && std::atoi(env) != 0;
+            }();
+            ggml_tensor * p_j;
+            if (skip_prob) {
+                p_j = ggml_fill(ctx0, ggml_new_tensor_2d(ctx0, GGML_TYPE_F32, 1, 1), 1.0f);
+            } else {
+                ggml_tensor * probs_j = ggml_soft_max(ctx0, logits_j);
+                p_j = ggml_get_rows(ctx0,
+                        ggml_reshape_2d(ctx0, probs_j, 1, probs_j->ne[0]), idx_j);
+                p_j = ggml_reshape_2d(ctx0, p_j, 1, 1);
+            }
             ggml_tensor * id_f = ggml_cast(ctx0, ggml_reshape_2d(ctx0, id_j, 1, 1), GGML_TYPE_F32);
             ggml_tensor * out_j = ggml_concat(ctx0, id_f, p_j, 0);
 

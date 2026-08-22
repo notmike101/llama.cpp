@@ -2220,6 +2220,8 @@ struct llama_model_qwen35 : public llama_model_base {
     ggml_backend_buffer_ptr mtp_tail_buf;
     ggml_tensor *           mtp_tail_head = nullptr;
     ggml_tensor *           mtp_tail_ids  = nullptr;
+    ggml_tensor *           mtp_compact_head = nullptr;
+    ggml_tensor *           mtp_compact_ids  = nullptr;
 
     struct graph : public llm_build_delta_net_base {
         graph(const llama_model & model, const llm_graph_params & params);

@@ -3723,6 +3723,8 @@ void llm_graph_context::build_sampling() const {
             assert(sampler->iface->backend_apply);
             sampler->iface->backend_apply(sampler, ctx0, gf, &data);
 
+            const bool token_only = data.sampled != nullptr && std::getenv("LLAMA_BACKEND_SAMPLE_TOKEN_ONLY") != nullptr;
+
             if (data.sampled != nullptr) {
                 if (active) {
                     res->t_sampled[rows[i]] = data.sampled;
@@ -3731,7 +3733,7 @@ void llm_graph_context::build_sampling() const {
                 ggml_build_forward_select(gf, outs.data(), outs.size(), i_out);
             }
 
-            if (data.probs != nullptr) {
+            if (!token_only && data.probs != nullptr) {
                 if (active) {
                     res->t_sampled_probs[rows[i]] = data.probs;
                 }
@@ -3739,7 +3741,7 @@ void llm_graph_context::build_sampling() const {
                 ggml_build_forward_select(gf, outs.data(), outs.size(), i_out);
             }
 
-            if (data.logits != nullptr) {
+            if (!token_only && data.logits != nullptr) {
                 if (active) {
                     res->t_sampled_logits[rows[i]] = data.logits;
                 }
@@ -3747,7 +3749,7 @@ void llm_graph_context::build_sampling() const {
                 ggml_build_forward_select(gf, outs.data(), outs.size(), i_out);
             }
 
-            if (data.candidates != nullptr) {
+            if (!token_only && data.candidates != nullptr) {
                 if (active) {
                     res->t_candidates[rows[i]] = data.candidates;
                 }

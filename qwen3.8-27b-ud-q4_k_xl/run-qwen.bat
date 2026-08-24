@@ -28,6 +28,7 @@ if not defined SPEC_DRAFT_N_MAX set "SPEC_DRAFT_N_MAX=6"
 if not defined SPEC_DRAFT_P_SPLIT set "SPEC_DRAFT_P_SPLIT=0.10"
 if not defined LLAMA_CUDA_GDN_DIRECT_STATE_GATHER set "LLAMA_CUDA_GDN_DIRECT_STATE_GATHER=1"
 if not defined LLAMA_CUDA_SSM_CONV_DIRECT_STATE set "LLAMA_CUDA_SSM_CONV_DIRECT_STATE=1"
+if not defined LLAMA_BACKEND_SAMPLE_TOKEN_ONLY set "LLAMA_BACKEND_SAMPLE_TOKEN_ONLY=1"
 
 rem Mapped chained drafting uses the compact prefix and tail output head.
 if not defined LLAMA_SPEC_CHAIN set "LLAMA_SPEC_CHAIN=1"

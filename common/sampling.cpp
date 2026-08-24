@@ -604,6 +604,15 @@ llama_token common_sampler_sample(struct common_sampler * gsmpl, struct llama_co
     auto & chain = gsmpl->chain;
     auto & cur_p = gsmpl->cur_p; // initialized by set_logits
 
+    if (std::getenv("LLAMA_BACKEND_SAMPLE_TOKEN_ONLY") != nullptr) {
+        id = llama_get_sampled_token_ith(ctx, idx);
+        if (id != LLAMA_TOKEN_NULL) {
+            GGML_ASSERT(!gsmpl->grmr    && "using grammar in combination with backend sampling is not supported");
+            GGML_ASSERT(!gsmpl->rbudget && "using reasoning budget in combination with backend sampling is not supported");
+            return id;
+        }
+    }
+
     gsmpl->set_logits(ctx, idx);
 
     // Check if a backend sampler has already sampled a token in which case we

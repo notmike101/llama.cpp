@@ -1446,6 +1446,31 @@ static void test_backend_mixed_sampling(const test_params & params) {
     printf("backend mixed sampling test PASSED\n");
 }
 
+static void test_backend_token_only_sampling(const test_params & params) {
+    const int seq_id = 0;
+
+    common_set_env("LLAMA_BACKEND_SAMPLE_TOKEN_ONLY", "1");
+
+    struct llama_sampler_chain_params chain_params = llama_sampler_chain_default_params();
+    llama_sampler_ptr sampler_chain(llama_sampler_chain_init(chain_params));
+    llama_sampler_chain_add(sampler_chain.get(), llama_sampler_init_top_k(20));
+    llama_sampler_chain_add(sampler_chain.get(), llama_sampler_init_dist(88));
+
+    std::vector<llama_sampler_seq_config> sampler_configs = {{ seq_id, sampler_chain.get() }};
+    test_context test_ctx(params, sampler_configs);
+
+    GGML_ASSERT(test_ctx.decode({{seq_id, "Hello"}}));
+
+    const int32_t idx = test_ctx.idx_for_seq(seq_id);
+    GGML_ASSERT(llama_get_sampled_token_ith(test_ctx.ctx.get(), idx) != LLAMA_TOKEN_NULL);
+    GGML_ASSERT(llama_get_sampled_logits_ith(test_ctx.ctx.get(), idx) == nullptr);
+    GGML_ASSERT(llama_get_sampled_probs_ith(test_ctx.ctx.get(), idx) == nullptr);
+    GGML_ASSERT(llama_get_sampled_candidates_count_ith(test_ctx.ctx.get(), idx) == 0);
+
+    common_set_env("LLAMA_BACKEND_SAMPLE_TOKEN_ONLY", "");
+    printf("backend token-only sampling test PASSED\n");
+}
+
 static void test_backend_set_sampler(const test_params & params) {
     const int seq_id = 0;
     const int32_t seed = 88;
@@ -2000,6 +2025,7 @@ struct backend_test_case {
 };
 
 static const backend_test_case BACKEND_TESTS[] = {
+    { "token_only",      test_backend_token_only_sampling,     true  },
     { "greedy",          test_backend_greedy_sampling,         true  },
     { "logit_bias",      test_backend_logit_bias_sampling,     true  },
     { "penalties",       test_backend_penalties_sampling,      true  },

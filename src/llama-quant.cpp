@@ -288,12 +288,18 @@ static void llama_tensor_dequantize_impl(
 
 static bool tensor_allows_quantization(const llama_model_quantize_params * params, llm_arch arch, const ggml_tensor * tensor) {
     // trivial checks first -- no string ops needed
-    if (params->only_copy)       return false;
-
     // quantize only 2D and 3D tensors (experts)
     if (ggml_n_dims(tensor) < 2) return false;
 
     const std::string name = ggml_get_name(tensor);
+
+    if (params->only_copy) {
+        const bool output_override = params->output_tensor_type < GGML_TYPE_COUNT && name == LLM_TN(arch)(LLM_TENSOR_OUTPUT, "weight");
+        const bool token_embedding_override = params->token_embedding_type < GGML_TYPE_COUNT && name == LLM_TN(arch)(LLM_TENSOR_TOKEN_EMBD, "weight");
+        if (!output_override && !token_embedding_override) {
+            return false;
+        }
+    }
 
     // This used to be a regex, but <regex> has an extreme cost to compile times.
     bool quantize = name.rfind("weight") == name.size() - 6; // ends with 'weight'?

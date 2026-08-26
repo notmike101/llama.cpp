@@ -369,6 +369,9 @@ bool ggml_cuda_should_use_mmvq(enum ggml_type type, int cc, int64_t ne11) {
                 return ne11 <= MMVQ_MAX_BATCH_SIZE;
         }
     }
+    if (cc >= GGML_CUDA_CC_AMPERE && cc < GGML_CUDA_CC_ADA_LOVELACE) {
+        return ne11 <= 4;
+    }
     return ne11 <= MMVQ_MAX_BATCH_SIZE;
 }
 

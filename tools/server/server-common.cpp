@@ -1318,7 +1318,7 @@ json oaicompat_chat_params_parse(
     // Parse the OAI "reasoning_effort" field; "none" disables reasoning.
     if (body.contains("reasoning_effort")) {
         auto reasoning_effort = json_value(body, "reasoning_effort", std::string(""));
-        if (reasoning_effort == "none") {
+        if (reasoning_effort == "none" || reasoning_effort == "off") {
             inputs.enable_thinking = false;
             inputs.chat_template_kwargs.erase("reasoning_effort");
         } else if (!reasoning_effort.empty()) {

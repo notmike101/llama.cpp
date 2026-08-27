@@ -1316,12 +1316,20 @@ json oaicompat_chat_params_parse(
     }
 
     // Parse the OAI "reasoning_effort" field; "none" disables reasoning.
+    std::string reasoning_effort;
     if (body.contains("reasoning_effort")) {
-        auto reasoning_effort = json_value(body, "reasoning_effort", std::string(""));
+        reasoning_effort = json_value(body, "reasoning_effort", std::string(""));
+    } else if (body.contains("reasoning") && body.at("reasoning").is_object()) {
+        reasoning_effort = json_value(body.at("reasoning"), "effort", std::string(""));
+    }
+    if (reasoning_effort.empty()) {
+        inputs.enable_thinking = false;
+    } else {
         if (reasoning_effort == "none" || reasoning_effort == "off") {
             inputs.enable_thinking = false;
             inputs.chat_template_kwargs.erase("reasoning_effort");
-        } else if (!reasoning_effort.empty()) {
+        } else {
+            inputs.enable_thinking = true;
             inputs.chat_template_kwargs["reasoning_effort"] = json(reasoning_effort).dump();
         }
     }
